@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Flower2 } from 'lucide-react';
-import { playReveal, playSuccess, playClick } from '../../utils/audio';
+import { Flower2, Sparkles } from 'lucide-react';
+import { playReveal, playSuccess, playClick, playSelect } from '../../utils/audio';
 import { logEvent } from '../../utils/logger';
 import { setMood } from '../../utils/mood';
 
@@ -9,127 +9,124 @@ interface Props {
   onNext: () => void;
 }
 
-const NO_MESSAGES = [
-  'not really',
-  'wait— are you sure? 👀',
-  'hold on, hear me out 🥺',
-  'i actually really like you though',
-  'catch me first 🏃',
-  'okay, one more chance? 🙈',
-  'pretty please, just say yes? 🎀',
+const PERSUASIVE_REASONS = [
+  { buttonText: 'wait— are you sure? 👀', reason: 'reason #1: i make top tier iced coffee & cafe recommendations ☕' },
+  { buttonText: 'hear me out first 🥺', reason: 'reason #2: 100% guarantee no awkward silences ✨' },
+  { buttonText: 'what if we get snacks? 🍪', reason: 'reason #3: you get 100% full control of the playlist 🎶' },
+  { buttonText: 'i promise im funny 😂', reason: 'reason #4: endless good vibes & genuine laugh attacks 🌸' },
+  { buttonText: 'think about the lore! 📖', reason: 'reason #5: we can leave anytime if it\'s ever boring ✌️' },
+  { buttonText: 'catch me first 🏃💨', reason: 'reason #6: this button is getting tired of running away 🙈' },
+  { buttonText: 'okay pretty please? 🎀', reason: 'reason #7: just one low-stakes meet, you won\'t regret it 💕' },
+  { buttonText: 'click yes already ✨', reason: 'final reason: you know you want to say yes 🌟' },
 ];
-
-// approx button box, for keeping it on-screen while it flees
-const BW = 230;
-const BH = 48;
-const MARGIN = 14;
 
 export const RevealScreen: React.FC<Props> = ({ onNext }) => {
   const [step, setStep] = useState<number>(0);
   const [yesClicked, setYesClicked] = useState<boolean>(false);
   const [yesStep, setYesStep] = useState<number>(0);
   const [saidNo, setSaidNo] = useState<boolean>(false);
-  const [noMessage, setNoMessage] = useState(NO_MESSAGES[0]);
-
+  
+  // Dodge state
+  const [dodges, setDodges] = useState<number>(0);
+  const [noButtonPos, setNoButtonPos] = useState<{ x: number; y: number } | null>(null);
+  const [currentReason, setCurrentReason] = useState<string>('');
+  const [buttonText, setButtonText] = useState<string>('not really');
+  
   const noBtnRef = useRef<HTMLButtonElement | null>(null);
-  const pos = useRef({ x: 0, y: 0 });
-  const target = useRef({ x: 0, y: 0 });
-  const cursor = useRef({ x: 0, y: 0 });
-  const dodges = useRef(0);
-  const msgIdx = useRef(0);
-  const lastMsg = useRef(0);
+  const isDodgingRef = useRef<boolean>(false);
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setStep(1), 500),
-      setTimeout(() => setStep(2), 2200),
-      setTimeout(() => { setStep(3); playReveal(); }, 4000),
-      setTimeout(() => setStep(4), 5500),
-      setTimeout(() => setStep(5), 7000),
+      setTimeout(() => setStep(1), 400),
+      setTimeout(() => setStep(2), 1800),
+      setTimeout(() => { setStep(3); playReveal(); }, 3200),
+      setTimeout(() => setStep(4), 4600),
+      setTimeout(() => setStep(5), 5800),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // ── Continuous "runaway No" engine — flees the cursor all over the screen ──
-  useLayoutEffect(() => {
+  // Safe random coordinate generator within mobile / desktop viewport boundaries
+  const calculateSafeDodgePosition = useCallback(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const btnWidth = Math.min(220, vw * 0.7);
+    const btnHeight = 48;
+
+    // Safe boundaries avoiding top music player and bottom phone navigation
+    const minX = 20;
+    const maxX = Math.max(minX, vw - btnWidth - 20);
+    const minY = 85;
+    const maxY = Math.max(minY, vh - btnHeight - 90);
+
+    // Pick random coordinates
+    let rx = Math.floor(minX + Math.random() * (maxX - minX));
+    let ry = Math.floor(minY + Math.random() * (maxY - minY));
+
+    // If existing position exists, ensure it jumps away significantly
+    if (noButtonPos) {
+      const dist = Math.hypot(rx - noButtonPos.x, ry - noButtonPos.y);
+      if (dist < 140) {
+        rx = rx < vw / 2 ? Math.min(maxX, rx + 160) : Math.max(minX, rx - 160);
+        ry = ry < vh / 2 ? Math.min(maxY, ry + 140) : Math.max(minY, ry - 140);
+      }
+    }
+
+    return { x: rx, y: ry };
+  }, [noButtonPos]);
+
+  // Handle dodge triggered by mouse approach, hover, or mobile tap/touch
+  const handleDodge = useCallback((e?: React.SyntheticEvent | MouseEvent | TouchEvent) => {
+    if (yesClicked || isDodgingRef.current) return;
+    isDodgingRef.current = true;
+
+    if (e && 'preventDefault' in e) {
+      e.preventDefault();
+    }
+
+    // Gentle haptic feedback on mobile if supported
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate(35); } catch {}
+    }
+
+    playSelect();
+
+    const newDodges = dodges + 1;
+    setDodges(newDodges);
+
+    const reasonObj = PERSUASIVE_REASONS[(newDodges - 1) % PERSUASIVE_REASONS.length];
+    setButtonText(reasonObj.buttonText);
+    setCurrentReason(reasonObj.reason);
+
+    const newPos = calculateSafeDodgePosition();
+    setNoButtonPos(newPos);
+
+    setTimeout(() => {
+      isDodgingRef.current = false;
+    }, 180);
+  }, [dodges, yesClicked, calculateSafeDodgePosition]);
+
+  // Proximity check on desktop only: if cursor gets within 60px of the button, dodge
+  useEffect(() => {
     if (step < 5 || yesClicked) return;
-    const vw = () => window.innerWidth;
-    const vh = () => window.innerHeight;
-    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-    const randPoint = () => ({
-      x: Math.random() * (vw() - BW - 2 * MARGIN) + MARGIN,
-      y: Math.random() * (vh() - BH - 2 * MARGIN) + MARGIN,
-    });
 
-    // start just to the right of / below the Yes button
-    const start = { x: clamp(vw() / 2 + 70, MARGIN, vw() - BW - MARGIN), y: clamp(vh() - 150, MARGIN, vh() - BH - MARGIN) };
-    pos.current = { ...start };
-    target.current = { ...start };
-    cursor.current = { x: vw() / 2, y: vh() / 2 };
-    // seed the position before paint so it never flashes at the top-left corner
-    if (noBtnRef.current) noBtnRef.current.style.transform = `translate3d(${start.x}px, ${start.y}px, 0)`;
+    const handleMouseMove = (e: MouseEvent) => {
+      const btn = noBtnRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const btnCenterX = rect.left + rect.width / 2;
+      const btnCenterY = rect.top + rect.height / 2;
+      const dist = Math.hypot(e.clientX - btnCenterX, e.clientY - btnCenterY);
 
-    const R = 190; // flee radius
-
-    const fleeFrom = (cx: number, cy: number) => {
-      const bcx = pos.current.x + BW / 2;
-      const bcy = pos.current.y + BH / 2;
-      let ang = Math.atan2(bcy - cy, bcx - cx);
-      if (!isFinite(ang)) ang = Math.random() * Math.PI * 2;
-      const jump = 280 + Math.random() * 140;
-      let tx = cx + Math.cos(ang) * jump - BW / 2;
-      let ty = cy + Math.sin(ang) * jump - BH / 2;
-      tx = clamp(tx, MARGIN, vw() - BW - MARGIN);
-      ty = clamp(ty, MARGIN, vh() - BH - MARGIN);
-      // cornered? teleport somewhere random & far instead
-      if (Math.hypot(tx + BW / 2 - cx, ty + BH / 2 - cy) < R) {
-        const p = randPoint();
-        tx = p.x; ty = p.y;
-      }
-      target.current = { x: tx, y: ty };
-      const now = performance.now();
-      if (now - lastMsg.current > 450) {
-        lastMsg.current = now;
-        msgIdx.current = (msgIdx.current + 1) % NO_MESSAGES.length;
-        dodges.current += 1;
-        setNoMessage(NO_MESSAGES[msgIdx.current]);
+      // Only dodge if cursor is strictly moving close to the button (within 55px)
+      if (dist < 55) {
+        handleDodge(e);
       }
     };
 
-    const onMove = (e: MouseEvent) => { cursor.current = { x: e.clientX, y: e.clientY }; };
-    const onTouch = (e: TouchEvent) => { const t = e.touches[0]; if (t) cursor.current = { x: t.clientX, y: t.clientY }; };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    window.addEventListener('touchmove', onTouch, { passive: true });
-
-    let raf = 0;
-    const tick = () => {
-      const el = noBtnRef.current;
-      if (!el) { raf = requestAnimationFrame(tick); return; }
-      const c = cursor.current;
-      const bcx = pos.current.x + BW / 2;
-      const bcy = pos.current.y + BH / 2;
-      const dist = Math.hypot(bcx - c.x, bcy - c.y);
-      if (dist < R) {
-        fleeFrom(c.x, c.y);
-      } else {
-        // keep wandering the whole screen even when idle
-        const reached = Math.hypot(target.current.x - pos.current.x, target.current.y - pos.current.y) < 4;
-        if (reached && Math.random() < 0.025) target.current = randPoint();
-      }
-      const ease = dist < R ? 0.3 : 0.05;
-      pos.current.x += (target.current.x - pos.current.x) * ease;
-      pos.current.y += (target.current.y - pos.current.y) * ease;
-      el.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0)`;
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('touchmove', onTouch);
-    };
-  }, [step, yesClicked]);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [step, yesClicked, handleDodge]);
 
   const lineStyle = (visible: boolean): React.CSSProperties => ({
     opacity: visible ? 1 : 0,
@@ -139,30 +136,25 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
 
   const handleYes = () => {
     playSuccess();
-    logEvent('reveal_response', { answer: 'yes', dodges: dodges.current });
+    logEvent('reveal_response', { answer: 'yes', dodges });
     setMood('celebration');
     setYesClicked(true);
     confetti({
-      particleCount: 45,
-      spread: 55,
+      particleCount: 50,
+      spread: 60,
       origin: { y: 0.65 },
       colors: ['#e0709a', '#f5c2d3', '#f0a6c4', '#ffffff'],
       disableForReducedMotion: true,
     });
-    setTimeout(() => setYesStep(1), 600);
-    setTimeout(() => setYesStep(2), 1800);
-    setTimeout(() => setYesStep(3), 3200);
-    setTimeout(() => setYesStep(4), 4800);
+    setTimeout(() => setYesStep(1), 500);
+    setTimeout(() => setYesStep(2), 1600);
+    setTimeout(() => setYesStep(3), 2800);
+    setTimeout(() => setYesStep(4), 4200);
   };
 
-  // If she somehow catches it and really says no — the whole thing just goes blank.
-  const handleNoClick = () => {
-    logEvent('reveal_response', { answer: 'no', dodges: dodges.current });
-    setSaidNo(true);
-  };
-  const handleNoPointerDown = (e: React.PointerEvent) => {
-    e.preventDefault(); // slip away before the tap lands
-    cursor.current = { x: e.clientX, y: e.clientY };
+  const handleNoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleDodge(e);
   };
 
   const handleContinueAfterYes = () => {
@@ -170,28 +162,28 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
     onNext();
   };
 
-  // ── She actually said no → nothing. A blank screen. ──
+  // She actually said no
   if (saidNo) {
     return <div style={{ position: 'fixed', inset: 0, zIndex: 100000, background: '#ffffff' }} />;
   }
 
-  // ── YES reaction sub-screen ──
+  // YES reaction sub-screen
   if (yesClicked) {
     return (
-      <div className="screen-wrapper experience-container">
-        <div style={{ minHeight: '260px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+      <div className="screen-wrapper experience-container" style={{ padding: '2rem 1rem' }}>
+        <div style={{ minHeight: '260px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', textAlign: 'center' }}>
           <h2 className="display-title" style={{ ...lineStyle(yesStep >= 1), fontSize: 'clamp(2.4rem, 5vw, 3.8rem)' }}>
             Oh.
           </h2>
           <p className="font-serif" style={{ ...lineStyle(yesStep >= 2), fontSize: 'clamp(1.4rem, 3vw, 2rem)', color: 'var(--text-accent)' }}>
             well... that's pretty great.
           </p>
-          <p className="cursive-label" style={{ ...lineStyle(yesStep >= 3), maxWidth: '460px' }}>
+          <p className="cursive-label" style={{ ...lineStyle(yesStep >= 3), maxWidth: '460px', fontSize: '1.25rem', lineHeight: 1.6 }}>
             no pressure, no rush. I just want to take it slow and actually get to know you. let's start with something low-stakes 🙂
           </p>
         </div>
         <div style={{ ...lineStyle(yesStep >= 4), marginTop: '2rem', pointerEvents: yesStep >= 4 ? 'auto' : 'none' }}>
-          <button onClick={handleContinueAfterYes} className="btn-accent">
+          <button onClick={handleContinueAfterYes} className="btn-accent" style={{ fontSize: '1.1rem', padding: '14px 28px' }}>
             <span>let's see how compatible we are</span>
           </button>
         </div>
@@ -199,25 +191,36 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
     );
   }
 
-  // ── Main reveal ──
+  // Main reveal
   return (
-    <div className="screen-wrapper experience-container">
-      <div style={{ minHeight: '320px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+    <div className="screen-wrapper experience-container" style={{ padding: '2rem 1.2rem', overflowX: 'hidden' }}>
+      <div style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.9rem', textAlign: 'center', maxWidth: '580px', width: '100%' }}>
         <p className="cursive-label" style={{ ...lineStyle(step >= 1), fontSize: '1.3rem' }}>
           okay...
         </p>
-        <p className="subheading" style={{ ...lineStyle(step >= 2), fontSize: '1.1rem' }}>
+        <p className="subheading" style={{ ...lineStyle(step >= 2), fontSize: '1.05rem' }}>
           I've been trying to make this unnecessarily mysterious.
         </p>
-        <h1 className="display-title" style={{ ...lineStyle(step >= 3), fontSize: 'clamp(2.8rem, 6vw, 4.6rem)', color: 'var(--text-accent)' }}>
+        <h1 className="display-title" style={{ ...lineStyle(step >= 3), fontSize: 'clamp(2.8rem, 6vw, 4.4rem)', color: 'var(--text-accent)', margin: '0.2rem 0' }}>
           It's me.
         </h1>
-        <p className="font-serif" style={{ ...lineStyle(step >= 4), fontSize: 'clamp(1.5rem, 3.2vw, 2.2rem)', fontWeight: 400 }}>
+        <p className="font-serif" style={{ ...lineStyle(step >= 4), fontSize: 'clamp(1.45rem, 3.2vw, 2.1rem)', fontWeight: 400 }}>
           Yeah. I like you.
         </p>
 
-        <div className="frosted-card" style={{ ...lineStyle(step >= 5), maxWidth: '500px', padding: '1.6rem 2rem', textAlign: 'center', marginTop: '0.5rem' }}>
-          <p className="cursive-label" style={{ fontSize: '1.25rem', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
+        <div
+          className="frosted-card"
+          style={{
+            ...lineStyle(step >= 5),
+            maxWidth: '480px',
+            width: '100%',
+            padding: '1.5rem 1.6rem',
+            textAlign: 'center',
+            marginTop: '0.6rem',
+            boxShadow: 'var(--shadow-md)'
+          }}
+        >
+          <p className="cursive-label" style={{ fontSize: '1.22rem', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
             I don't expect us to figure it all out fast, or rush into anything. I just
             want to take this slow — get to know you, and actually see how compatible we are.
           </p>
@@ -229,32 +232,113 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
         </div>
       </div>
 
-      {/* YES stays put; NO runs away across the whole screen */}
-      <div style={{ ...lineStyle(step >= 5), display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '70px', marginTop: '1.5rem', pointerEvents: step >= 5 ? 'auto' : 'none' }}>
-        <button onClick={handleYes} className="btn-accent" style={{ fontSize: '1.15rem', padding: '14px 38px' }}>
+      {/* Persuasive reason bubble if user attempted to click No */}
+      {currentReason && step >= 5 && !yesClicked && (
+        <div
+          className="animate-fade-in-up font-cursive"
+          style={{
+            marginTop: '1.2rem',
+            padding: '7px 18px',
+            background: 'var(--accent-soft)',
+            color: 'var(--text-accent)',
+            borderRadius: 'var(--radius-full)',
+            border: '1px solid var(--accent-border)',
+            fontSize: '1.15rem',
+            fontWeight: 600,
+            textAlign: 'center',
+            maxWidth: '92vw',
+            boxShadow: 'var(--shadow-sm)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <Sparkles size={15} style={{ flexShrink: 0 }} />
+          <span>{currentReason}</span>
+        </div>
+      )}
+
+      {/* Action Buttons: Yes & No (stationary initially, No dodges on close approach or touch) */}
+      <div
+        style={{
+          ...lineStyle(step >= 5),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '16px',
+          flexWrap: 'wrap',
+          minHeight: '65px',
+          marginTop: '1.5rem',
+          pointerEvents: step >= 5 ? 'auto' : 'none',
+          position: 'relative',
+          width: '100%',
+          maxWidth: '480px'
+        }}
+      >
+        {/* YES Button — grows slightly with each dodge attempt */}
+        <button
+          onClick={handleYes}
+          className="btn-accent"
+          style={{
+            fontSize: '1.12rem',
+            padding: '13px 34px',
+            transform: `scale(${1 + Math.min(dodges * 0.04, 0.22)})`,
+            transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxShadow: dodges > 0 ? '0 6px 20px var(--accent-glow)' : undefined
+          }}
+        >
           <Flower2 size={17} />
           <span>yes, let's find out</span>
         </button>
+
+        {/* NO Button — initially in-flow beside YES, jumps to safe spot only upon approach / touch */}
+        {!noButtonPos ? (
+          <button
+            ref={noBtnRef}
+            onClick={handleNoClick}
+            onPointerEnter={handleDodge}
+            onPointerDown={handleDodge}
+            onTouchStart={handleDodge}
+            className="btn-secondary"
+            style={{
+              fontSize: '0.98rem',
+              padding: '12px 22px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              touchAction: 'none'
+            }}
+          >
+            <span>{buttonText}</span>
+          </button>
+        ) : null}
       </div>
 
-      {step >= 5 && !yesClicked && (
+      {/* Dodged NO button in absolute / fixed position */}
+      {step >= 5 && !yesClicked && noButtonPos && (
         <button
           ref={noBtnRef}
           onClick={handleNoClick}
-          onPointerDown={handleNoPointerDown}
+          onPointerEnter={handleDodge}
+          onPointerDown={handleDodge}
+          onTouchStart={handleDodge}
           className="btn-secondary"
           style={{
             position: 'fixed',
             top: 0,
             left: 0,
-            zIndex: 60,
-            fontSize: '1rem',
-            padding: '12px 22px',
-            willChange: 'transform',
+            zIndex: 90,
+            fontSize: '0.98rem',
+            padding: '11px 20px',
+            transform: `translate3d(${noButtonPos.x}px, ${noButtonPos.y}px, 0)`,
+            transition: 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
+            cursor: 'pointer',
             touchAction: 'none',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+            maxWidth: 'calc(100vw - 32px)'
           }}
         >
-          <span>{noMessage}</span>
+          <span>{buttonText}</span>
         </button>
       )}
     </div>

@@ -597,6 +597,35 @@ html.cursor-hidden * {
   animation: screenIn 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ═══ Mobile Web Phone Optimizations ═══ */
+@media (max-width: 640px) {
+  :root {
+    --space-xl: 1.5rem;
+    --space-2xl: 2.2rem;
+  }
+  .experience-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .frosted-card {
+    padding: 1.3rem 1.1rem;
+    border-radius: var(--radius-md);
+  }
+  .display-title {
+    font-size: clamp(2rem, 8vw, 2.8rem);
+  }
+  .section-title {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+  }
+  .cursive-label {
+    font-size: 1.25rem;
+  }
+  .btn-accent, .btn-primary {
+    padding: 12px 24px;
+    font-size: 1rem;
+  }
+}
+
 /* ═══ Reduced motion ═══ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
