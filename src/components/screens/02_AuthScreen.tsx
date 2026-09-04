@@ -17,7 +17,7 @@ export const AuthScreen: React.FC<Props> = ({ onNext }) => {
     useRef<HTMLInputElement | null>(null),
   ];
 
-  const CORRECT_CODE = '777';
+  const CORRECT_CODE = '830';
 
   useEffect(() => {
     inputRefs[0].current?.focus();
@@ -61,18 +61,20 @@ export const AuthScreen: React.FC<Props> = ({ onNext }) => {
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const entered = digits.join('');
-    if (entered.length < 3) {
+    if (entered === CORRECT_CODE) {
+      setError(false);
+      playTransition();
+      onNext();
+    } else {
       setError(true);
-      return;
+      setAttempts((prev) => prev + 1);
+      if (attempts >= 1) setShowHint(true);
     }
-    // Accepts 3 digits (her ID's last three numbers or any 3 digits)
-    playTransition();
-    onNext();
   };
 
   const fillHintCode = () => {
     playClick();
-    setDigits(['0', '0', '7']);
+    setDigits(['8', '3', '0']);
     setError(false);
     setTimeout(() => {
       playTransition();
@@ -134,7 +136,7 @@ export const AuthScreen: React.FC<Props> = ({ onNext }) => {
 
           {error && (
             <p className="animate-fade-in-up cursive-label" style={{ color: 'var(--text-accent)', marginBottom: '1.2rem' }}>
-              please enter all 3 digits 👀
+              that doesn't seem right 👀
             </p>
           )}
 
