@@ -99,7 +99,7 @@ export const OpeningScreen: React.FC<Props> = ({ onNext }) => {
             maxWidth: '440px',
           }}
         >
-          I've talked to so many people so easily... but with you, my brain just stops working. idk why. so I made this instead 😭
+          I could talk to 10 different people without thinking twice. but with you, my brain just… stops. I don't know what to say. I don't know why. so I built you a whole website instead 😭
         </p>
       </div>
 

@@ -64,7 +64,7 @@ export const MeetingPlanner: React.FC<Props> = ({ initialPlan, onSavePlan }) => 
                     color: vibe === v.id ? 'var(--accent)' : 'var(--text-primary)',
                     border: `1px solid ${vibe === v.id ? 'var(--accent-border)' : 'var(--border)'}`,
                     cursor: 'pointer', transition: 'all var(--transition-fast)',
-                    fontFamily: 'var(--font-cursive)',
+                    fontFamily: 'var(--font-romantic)',
                   }}
                 >
                   {v.emoji} {v.id}
@@ -89,7 +89,7 @@ export const MeetingPlanner: React.FC<Props> = ({ initialPlan, onSavePlan }) => 
                     background: place === p ? 'var(--bg-card-selected)' : 'rgba(255,255,255,0.5)',
                     border: `1px solid ${place === p ? 'var(--accent)' : 'var(--border)'}`,
                     color: 'var(--text-primary)', cursor: 'pointer',
-                    fontFamily: 'var(--font-cursive)',
+                    fontFamily: 'var(--font-romantic)',
                   }}
                 >
                   {p}

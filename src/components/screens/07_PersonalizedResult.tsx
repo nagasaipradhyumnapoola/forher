@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CompatibilityAnswers, LoveLanguageAnswers, MeetVibe } from '../../types';
 import { MEET_VIBES, ENERGY_VIBES, MUSIC_VIBES } from '../../data/vibes';
-import { ArrowRight, Heart } from 'lucide-react';
+import { ArrowRight, Flower2 } from 'lucide-react';
 import { playClick, playTransition } from '../../utils/audio';
 
 interface Props {
@@ -84,7 +84,7 @@ export const PersonalizedResult: React.FC<Props> = ({ compatibility, loveLanguag
       >
         {/* Faint watermark */}
         <div style={{ position: 'absolute', bottom: '-15px', right: '-15px', opacity: 0.035, pointerEvents: 'none' }}>
-          <Heart size={160} fill="currentColor" />
+          <Flower2 size={160} />
         </div>
 
         {/* Vibe badges */}

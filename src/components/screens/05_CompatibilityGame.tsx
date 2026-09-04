@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MeetVibe, EnergyVibe, MusicVibe, CompatibilityAnswers } from '../../types';
 import { MEET_VIBES, ENERGY_VIBES, MUSIC_VIBES } from '../../data/vibes';
 import { playSelect, playTransition } from '../../utils/audio';
+import { logEvent } from '../../utils/logger';
 
 interface Props {
   initialAnswers: CompatibilityAnswers;
@@ -23,18 +24,21 @@ export const CompatibilityGame: React.FC<Props> = ({ initialAnswers, onComplete 
   const handleSelectMeet = (vibe: MeetVibe) => {
     const updated = { ...answers, meetVibe: vibe };
     setAnswers(updated);
+    logEvent('compat_meet', { id: vibe, title: MEET_VIBES.find((v) => v.id === vibe)?.title || vibe });
     transition(() => setCurrentStep(1));
   };
 
   const handleSelectEnergy = (energy: EnergyVibe) => {
     const updated = { ...answers, energyVibe: energy };
     setAnswers(updated);
+    logEvent('compat_energy', { id: energy, title: ENERGY_VIBES.find((e) => e.id === energy)?.title || energy });
     transition(() => setCurrentStep(2));
   };
 
   const handleSelectMusic = (music: MusicVibe) => {
     const updated = { ...answers, musicVibe: music };
     setAnswers(updated);
+    logEvent('compat_music', { id: music, title: MUSIC_VIBES.find((m) => m.id === music)?.title || music });
     playTransition();
     setTimeout(() => onComplete(updated), 600);
   };

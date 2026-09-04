@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Lock, KeyRound } from 'lucide-react';
 import { playClick, playTransition } from '../../utils/audio';
+import { logEvent } from '../../utils/logger';
 
 interface Props {
   onNext: () => void;
@@ -63,10 +64,12 @@ export const AuthScreen: React.FC<Props> = ({ onNext }) => {
     const entered = digits.join('');
     if (entered === CORRECT_CODE) {
       setError(false);
+      logEvent('passcode_ok');
       playTransition();
       onNext();
     } else {
       setError(true);
+      logEvent('passcode_fail', { attempt: attempts + 1 });
       setAttempts((prev) => prev + 1);
       if (attempts >= 1) setShowHint(true);
     }
@@ -76,6 +79,7 @@ export const AuthScreen: React.FC<Props> = ({ onNext }) => {
     playClick();
     setDigits(['8', '3', '0']);
     setError(false);
+    logEvent('passcode_ok');
     setTimeout(() => {
       playTransition();
       onNext();

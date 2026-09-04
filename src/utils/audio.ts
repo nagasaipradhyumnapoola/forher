@@ -59,16 +59,25 @@ function playTone(
   osc.stop(now + duration);
 }
 
+/** Whisper-soft tick — when the pointer lands on something interactive */
+let lastHover = 0;
+export function playHover() {
+  const now = Date.now();
+  if (now - lastHover < 55) return; // throttle so gliding across UI stays gentle
+  lastHover = now;
+  playTone(2300, 0.035, 0.022, 'sine', 0, 1);
+}
+
 /** Tiny soft click — for normal button presses */
 export function playClick() {
-  playTone(1800, 0.06, 0.07, 'sine', 0, 2);
-  playTone(1200, 0.04, 0.04, 'triangle', 0, 1);
+  playTone(1850, 0.07, 0.09, 'sine', 0, 2);
+  playTone(1240, 0.05, 0.05, 'triangle', 0, 1);
 }
 
 /** Tiny "ting" — for selecting an option */
 export function playSelect() {
-  playTone(1400, 0.1, 0.08, 'sine', 0, 5);
-  setTimeout(() => playTone(2100, 0.08, 0.05, 'sine', 0, 3), 40);
+  playTone(1400, 0.11, 0.1, 'sine', 0, 5);
+  setTimeout(() => playTone(2100, 0.09, 0.06, 'sine', 0, 3), 42);
 }
 
 /** Warmer transition — for moving to next section */

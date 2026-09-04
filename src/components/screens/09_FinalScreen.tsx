@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { MeetingPlan } from '../../types';
 import { MEET_VIBES } from '../../data/vibes';
-import { MapPin, Calendar, Clock, Edit3, Share2, Check, Heart } from 'lucide-react';
+import { MapPin, Calendar, Clock, Edit3, Share2, Check, Flower2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playReveal, playClick } from '../../utils/audio';
+import { logEvent } from '../../utils/logger';
 
 interface Props {
   plan: MeetingPlan;
@@ -18,7 +19,7 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
   useEffect(() => {
     confetti({
       particleCount: 35, spread: 60, origin: { y: 0.6 },
-      colors: ['#D86C7B', '#FAD4D8', '#E6C09C'],
+      colors: ['#e0709a', '#f5c2d3', '#f0a6c4'],
       disableForReducedMotion: true,
     });
     playReveal();
@@ -42,6 +43,7 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
 
   const handleCopy = () => {
     playClick();
+    logEvent('plan_copied');
     const text = `✨ Our Plan ✨\n${vibeData.emoji} ${vibeData.title}\n📍 ${plan.place}\n📅 ${plan.date}\n⏰ ${plan.time}\n\nSee you there :) — Pradhyumna`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -71,7 +73,7 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
           I don't know exactly where this goes. but I'd like to find out with you.
         </p>
 
-        <p className="font-cursive" style={{ ...lineStyle(step >= 5), fontSize: '1.4rem', color: 'var(--text-primary)', marginTop: '0.3rem' }}>
+        <p className="font-script" style={{ ...lineStyle(step >= 5), fontSize: '2.1rem', color: 'var(--text-accent)', marginTop: '0.4rem' }}>
           — Pradhyumna
         </p>
       </div>
@@ -81,7 +83,7 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
         <div className="plan-ticket" style={{ padding: '2.2rem 2rem', textAlign: 'left', marginBottom: '1.2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <span className="badge-label" style={{ fontSize: '0.76rem' }}>
-              <Heart size={11} fill="currentColor" /> souvenir ticket
+              <Flower2 size={11} /> souvenir ticket
             </span>
             <span className="font-cursive" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               reserved for Moksha
@@ -132,6 +134,12 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
             <span>{copied ? 'copied!' : 'copy plan'}</span>
           </button>
         </div>
+
+        <p className="cursive-small" style={{ marginTop: '1.6rem', lineHeight: 1.55, color: 'var(--text-secondary)', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
+          p.s. — I rewrote this an embarrassing number of times. nothing felt
+          good enough for you, and I ran out of excuses not to just say it.
+          so… hi. 🙈
+        </p>
       </div>
 
       {step < 6 && (

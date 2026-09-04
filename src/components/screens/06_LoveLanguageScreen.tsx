@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LoveLanguageAnswers } from '../../types';
 import { ArrowRight } from 'lucide-react';
 import { playClick, playConfirm } from '../../utils/audio';
+import { logEvent } from '../../utils/logger';
 
 interface Props {
   initialAnswers: LoveLanguageAnswers;
@@ -14,6 +15,7 @@ export const LoveLanguageScreen: React.FC<Props> = ({ initialAnswers, onSave }) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     playConfirm();
+    logEvent('love_language', { loveLanguage: answers.loveLanguage, feltAppreciated: answers.feltAppreciated });
     onSave(answers);
   };
 
