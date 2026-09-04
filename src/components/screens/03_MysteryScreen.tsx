@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowRight, HelpCircle, Heart, Sparkles, UserCheck } from 'lucide-react';
+import { ArrowRight, Heart, Sparkles, UserCheck } from 'lucide-react';
+import { playSelect, playTransition } from '../../utils/audio';
 
 interface Props {
   onNext: () => void;
@@ -11,60 +12,41 @@ export const MysteryScreen: React.FC<Props> = ({ onNext }) => {
   const choices = [
     {
       id: 1,
-      icon: <Heart size={20} className="text-accent" />,
-      title: 'Your secret admirer',
-      subtitle: 'Someone who thinks about you a little more than usual.'
+      icon: <Heart size={18} />,
+      title: 'your secret admirer',
+      subtitle: 'someone who thinks about you a little more than usual.',
     },
     {
       id: 2,
-      icon: <Sparkles size={20} className="text-accent" />,
-      title: "Someone you didn't expect",
-      subtitle: 'Or maybe you secretly did, just a tiny bit.'
+      icon: <Sparkles size={18} />,
+      title: "someone you didn't expect",
+      subtitle: 'or maybe you secretly did, just a tiny bit.',
     },
     {
       id: 3,
-      icon: <UserCheck size={20} className="text-accent" />,
-      title: 'A familiar face with a confession',
-      subtitle: 'Ready to stop dropping subtle hints.'
-    }
+      icon: <UserCheck size={18} />,
+      title: 'a familiar face with a confession',
+      subtitle: 'ready to stop dropping subtle hints.',
+    },
   ];
 
   const handleSelect = (idx: number) => {
+    playSelect();
     setSelected(idx);
-    // Smooth transition
-    setTimeout(() => {
-      onNext();
-    }, 450);
+    setTimeout(() => { playTransition(); onNext(); }, 500);
   };
 
   return (
     <div className="screen-wrapper experience-container">
-      <div style={{ marginBottom: '1.5rem' }}>
-        <span className="badge-label">
-          <HelpCircle size={13} />
-          Mystery Question
-        </span>
-      </div>
-
-      <h1 className="display-title" style={{ marginBottom: '0.8rem' }}>
+      <h1 className="display-title" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', marginBottom: '0.5rem' }}>
         I have something to tell you.
       </h1>
 
-      <p className="subheading" style={{ marginBottom: '2.5rem' }}>
-        Before I say it... who do you think put this together for you?
+      <p className="cursive-label" style={{ marginBottom: '2.2rem', color: 'var(--text-secondary)' }}>
+        before I say it... who do you think put this together?
       </p>
 
-      {/* Interactive Cards */}
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '560px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '14px',
-          marginBottom: '2.5rem'
-        }}
-      >
+      <div style={{ width: '100%', maxWidth: '520px', display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '2rem' }}>
         {choices.map((choice, idx) => {
           const isSelected = selected === idx;
           return (
@@ -75,62 +57,31 @@ export const MysteryScreen: React.FC<Props> = ({ onNext }) => {
               role="button"
               tabIndex={0}
               onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelect(idx)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '18px',
-                padding: '1.3rem 1.6rem',
-                cursor: 'pointer'
-              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '1.2rem 1.5rem' }}
             >
-              <div
-                style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: 'var(--radius-md)',
-                  background: isSelected ? 'var(--accent)' : 'var(--accent-soft)',
-                  color: isSelected ? '#ffffff' : 'var(--accent)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all var(--transition-fast)'
-                }}
-              >
+              <div style={{
+                width: '38px', height: '38px', borderRadius: 'var(--radius-md)',
+                background: isSelected ? 'var(--accent)' : 'var(--accent-soft)',
+                color: isSelected ? '#fff' : 'var(--accent)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                transition: 'all var(--transition-fast)',
+              }}>
                 {choice.icon}
               </div>
-
               <div style={{ flex: 1 }}>
-                <h3
-                  style={{
-                    fontSize: '1.12rem',
-                    fontWeight: 600,
-                    color: 'var(--text-primary)',
-                    marginBottom: '3px'
-                  }}
-                >
+                <h3 className="font-cursive" style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
                   {choice.title}
                 </h3>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-                  {choice.subtitle}
-                </p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{choice.subtitle}</p>
               </div>
-
-              <ArrowRight
-                size={18}
-                style={{
-                  color: isSelected ? 'var(--accent)' : 'var(--text-muted)',
-                  transform: isSelected ? 'translateX(4px)' : 'translateX(0)',
-                  transition: 'transform var(--transition-fast)'
-                }}
-              />
+              <ArrowRight size={16} style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)', transform: isSelected ? 'translateX(4px)' : 'translateX(0)', transition: 'transform var(--transition-fast)' }} />
             </div>
           );
         })}
       </div>
 
-      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-        Pick any card to see who it is...
+      <p className="cursive-small" style={{ fontStyle: 'italic' }}>
+        pick any card to find out...
       </p>
     </div>
   );

@@ -1,7 +1,18 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-export const AmbientBackground: React.FC = () => {
+interface Props {
+  intensity?: 'calm' | 'warm' | 'magical' | 'celebration';
+}
+
+export const AmbientBackground: React.FC<Props> = ({ intensity = 'calm' }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [showRibbons, setShowRibbons] = useState(false);
+
+  useEffect(() => {
+    // Fade in ribbons after a short delay
+    const timer = setTimeout(() => setShowRibbons(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -18,34 +29,37 @@ export const AmbientBackground: React.FC = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
     };
-
     window.addEventListener('resize', handleResize);
 
-    // Particle class for subtle floating sparkles/dust motes
+    // Particle configuration based on intensity
+    const particleCounts: Record<string, number> = {
+      calm: 18,
+      warm: 24,
+      magical: 30,
+      celebration: 35
+    };
+
+    const count = Math.min(particleCounts[intensity] || 18, width > 768 ? 35 : 16);
+
     interface Particle {
-      x: number;
-      y: number;
+      x: number; y: number;
       size: number;
-      speedY: number;
-      speedX: number;
-      opacity: number;
-      opacityDirection: number;
+      speedY: number; speedX: number;
+      opacity: number; opacityDir: number;
       hue: number;
     }
 
-    const particleCount = Math.min(width > 768 ? 32 : 16, 40);
     const particles: Particle[] = [];
-
-    for (let i = 0; i < particleCount; i++) {
+    for (let i = 0; i < count; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        size: Math.random() * 2.2 + 0.8,
-        speedY: -(Math.random() * 0.35 + 0.1),
-        speedX: (Math.random() - 0.5) * 0.25,
-        opacity: Math.random() * 0.4 + 0.1,
-        opacityDirection: (Math.random() - 0.5) * 0.008,
-        hue: Math.random() > 0.6 ? 350 : 35 // soft warm rose or subtle golden warm
+        size: Math.random() * 2 + 0.6,
+        speedY: -(Math.random() * 0.25 + 0.05),
+        speedX: (Math.random() - 0.5) * 0.18,
+        opacity: Math.random() * 0.3 + 0.05,
+        opacityDir: (Math.random() - 0.5) * 0.006,
+        hue: Math.random() > 0.5 ? 350 : 32
       });
     }
 
@@ -55,32 +69,25 @@ export const AmbientBackground: React.FC = () => {
       particles.forEach((p) => {
         p.y += p.speedY;
         p.x += p.speedX;
-
-        p.opacity += p.opacityDirection;
-        if (p.opacity <= 0.08 || p.opacity >= 0.45) {
-          p.opacityDirection *= -1;
-        }
-
-        // Reset when out of screen
-        if (p.y < -10) {
-          p.y = height + 10;
-          p.x = Math.random() * width;
-        }
+        p.opacity += p.opacityDir;
+        if (p.opacity <= 0.04 || p.opacity >= 0.35) p.opacityDir *= -1;
+        if (p.y < -10) { p.y = height + 10; p.x = Math.random() * width; }
         if (p.x < -10) p.x = width + 10;
         if (p.x > width + 10) p.x = -10;
 
-        // Draw soft glowing sparkle
+        // Draw soft sparkle
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2.5);
+        grad.addColorStop(0, `hsla(${p.hue}, 55%, 78%, ${p.opacity})`);
+        grad.addColorStop(1, `hsla(${p.hue}, 55%, 78%, 0)`);
         ctx.beginPath();
-        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
-        gradient.addColorStop(0, `hsla(${p.hue}, 60%, 75%, ${p.opacity})`);
-        gradient.addColorStop(1, `hsla(${p.hue}, 60%, 75%, 0)`);
-        ctx.fillStyle = gradient;
-        ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
         ctx.fill();
 
+        // Tiny bright center
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * 1.3})`;
+        ctx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * 1.2})`;
         ctx.fill();
       });
 
@@ -93,21 +100,30 @@ export const AmbientBackground: React.FC = () => {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [intensity]);
 
   return (
     <>
+      {/* Film grain */}
       <div className="grain-overlay" />
-      <div className="ambient-glow ambient-glow-1" />
-      <div className="ambient-glow ambient-glow-2" />
+
+      {/* Morphing gradient blobs */}
+      <div className="ambient-blob blob-1" />
+      <div className="ambient-blob blob-2" />
+      <div className="ambient-blob blob-3" />
+
+      {/* Subtle floating ribbons */}
+      <div className={`ribbon ribbon-1 ${showRibbons ? 'visible' : ''}`} />
+      <div className={`ribbon ribbon-2 ${showRibbons ? 'visible' : ''}`} />
+      <div className={`ribbon ribbon-3 ${showRibbons ? 'visible' : ''}`} />
+
+      {/* Sparkle particle canvas */}
       <canvas
         ref={canvasRef}
         style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
+          top: 0, left: 0,
+          width: '100vw', height: '100vh',
           pointerEvents: 'none',
           zIndex: 2
         }}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MeetVibe, EnergyVibe, MusicVibe, CompatibilityAnswers } from '../../types';
 import { MEET_VIBES, ENERGY_VIBES, MUSIC_VIBES } from '../../data/vibes';
-import { Sparkles, Compass } from 'lucide-react';
+import { playSelect, playTransition } from '../../utils/audio';
 
 interface Props {
   initialAnswers: CompatibilityAnswers;
@@ -13,226 +13,94 @@ export const CompatibilityGame: React.FC<Props> = ({ initialAnswers, onComplete 
   const [answers, setAnswers] = useState<CompatibilityAnswers>(initialAnswers);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
 
-  const handleSelectMeet = (vibe: MeetVibe) => {
+  const transition = (cb: () => void) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
+    playSelect();
+    setTimeout(() => { cb(); setIsTransitioning(false); }, 500);
+  };
+
+  const handleSelectMeet = (vibe: MeetVibe) => {
     const updated = { ...answers, meetVibe: vibe };
     setAnswers(updated);
-
-    setTimeout(() => {
-      setCurrentStep(1);
-      setIsTransitioning(false);
-    }, 450);
+    transition(() => setCurrentStep(1));
   };
 
   const handleSelectEnergy = (energy: EnergyVibe) => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
     const updated = { ...answers, energyVibe: energy };
     setAnswers(updated);
-
-    setTimeout(() => {
-      setCurrentStep(2);
-      setIsTransitioning(false);
-    }, 450);
+    transition(() => setCurrentStep(2));
   };
 
   const handleSelectMusic = (music: MusicVibe) => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
     const updated = { ...answers, musicVibe: music };
     setAnswers(updated);
-
-    setTimeout(() => {
-      onComplete(updated);
-    }, 550);
+    playTransition();
+    setTimeout(() => onComplete(updated), 600);
   };
 
-  return (
-    <div className="screen-wrapper experience-container">
-      {/* Progress Dots */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          marginBottom: '2rem'
-        }}
-      >
-        {[0, 1, 2].map((idx) => (
+  const stepTitles = [
+    { title: "what sounds like your kind of first meet?", sub: "pick the vibe that feels most like you." },
+    { title: "what's the energy vibe?", sub: "how do you imagine the mood feeling?" },
+    { title: "what's on the playlist on the way?", sub: "the soundtrack playing in the background." },
+  ];
+
+  const renderCards = (items: { id: string; emoji: string; title: string; description: string }[], selected: string | null, onSelect: (id: any) => void) => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', width: '100%' }}>
+      {items.map((item) => {
+        const isSelected = selected === item.id;
+        return (
           <div
-            key={idx}
-            style={{
-              width: idx === currentStep ? '24px' : '8px',
-              height: '8px',
-              borderRadius: 'var(--radius-full)',
-              background: idx <= currentStep ? 'var(--accent)' : 'var(--border)',
-              transition: 'all var(--transition-normal)'
-            }}
-          />
+            key={item.id}
+            onClick={() => onSelect(item.id)}
+            className={`interactive-card ${isSelected ? 'selected' : ''}`}
+            role="button" tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect(item.id)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '1.4rem' }}>{item.emoji}</span>
+              <h3 className="font-cursive" style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)' }}>{item.title}</h3>
+            </div>
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{item.description}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div className="screen-wrapper experience-container" style={{ maxWidth: '720px' }}>
+      {/* Progress dots */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
+        {[0, 1, 2].map((idx) => (
+          <div key={idx} style={{
+            width: idx === currentStep ? '22px' : '8px', height: '8px',
+            borderRadius: 'var(--radius-full)',
+            background: idx <= currentStep ? 'var(--accent)' : 'var(--border)',
+            transition: 'all var(--transition-normal)',
+          }} />
         ))}
       </div>
 
-      {/* Step 0: Meet Vibe */}
+      {/* Intro copy — only on step 0 */}
       {currentStep === 0 && (
-        <div className="screen-wrapper" style={{ width: '100%', maxWidth: '680px' }}>
-          <span className="badge-label" style={{ marginBottom: '1rem' }}>
-            <Compass size={13} />
-            Question 1 of 3
-          </span>
-
-          <h2 className="display-title" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.2rem)', marginBottom: '0.6rem' }}>
-            What sounds like your kind of first meet?
-          </h2>
-
-          <p className="subheading" style={{ marginBottom: '2.4rem' }}>
-            Pick the vibe that feels most like you.
-          </p>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '16px',
-              width: '100%'
-            }}
-          >
-            {MEET_VIBES.map((item) => {
-              const isSelected = answers.meetVibe === item.id;
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => handleSelectMeet(item.id)}
-                  className={`interactive-card ${isSelected ? 'selected' : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelectMeet(item.id)}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: '110px'
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '1.6rem' }}>{item.emoji}</span>
-                      <h3 style={{ fontSize: '1.08rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {item.title}
-                      </h3>
-                    </div>
-                    <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <p className="cursive-label" style={{ marginBottom: '0.8rem', color: 'var(--text-accent)' }}>
+          before we get ahead of ourselves...
+        </p>
       )}
 
-      {/* Step 1: Energy Vibe */}
-      {currentStep === 1 && (
-        <div className="screen-wrapper" style={{ width: '100%', maxWidth: '640px' }}>
-          <span className="badge-label" style={{ marginBottom: '1rem' }}>
-            <Sparkles size={13} />
-            Question 2 of 3
-          </span>
+      <h2 className="display-title" style={{ fontSize: 'clamp(2rem, 4.5vw, 3rem)', marginBottom: '0.4rem' }}>
+        {stepTitles[currentStep].title}
+      </h2>
+      <p className="subheading" style={{ marginBottom: '2rem' }}>
+        {stepTitles[currentStep].sub}
+      </p>
 
-          <h2 className="display-title" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.2rem)', marginBottom: '0.6rem' }}>
-            What's the energy vibe?
-          </h2>
-
-          <p className="subheading" style={{ marginBottom: '2.4rem' }}>
-            How do you imagine the mood feeling?
-          </p>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: '16px',
-              width: '100%'
-            }}
-          >
-            {ENERGY_VIBES.map((item) => {
-              const isSelected = answers.energyVibe === item.id;
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => handleSelectEnergy(item.id)}
-                  className={`interactive-card ${isSelected ? 'selected' : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelectEnergy(item.id)}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '1.6rem' }}>{item.emoji}</span>
-                    <h3 style={{ fontSize: '1.08rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {item.title}
-                    </h3>
-                  </div>
-                  <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                    {item.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Step 2: Music Vibe */}
-      {currentStep === 2 && (
-        <div className="screen-wrapper" style={{ width: '100%', maxWidth: '640px' }}>
-          <span className="badge-label" style={{ marginBottom: '1rem' }}>
-            <Sparkles size={13} />
-            Question 3 of 3
-          </span>
-
-          <h2 className="display-title" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.2rem)', marginBottom: '0.6rem' }}>
-            What's on the playlist on the way?
-          </h2>
-
-          <p className="subheading" style={{ marginBottom: '2.4rem' }}>
-            The soundtrack playing in the background.
-          </p>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: '16px',
-              width: '100%'
-            }}
-          >
-            {MUSIC_VIBES.map((item) => {
-              const isSelected = answers.musicVibe === item.id;
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => handleSelectMusic(item.id)}
-                  className={`interactive-card ${isSelected ? 'selected' : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelectMusic(item.id)}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '1.6rem' }}>{item.emoji}</span>
-                    <h3 style={{ fontSize: '1.08rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {item.title}
-                    </h3>
-                  </div>
-                  <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                    {item.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <div key={currentStep} className="animate-fade-in-up" style={{ width: '100%' }}>
+        {currentStep === 0 && renderCards(MEET_VIBES, answers.meetVibe, handleSelectMeet)}
+        {currentStep === 1 && renderCards(ENERGY_VIBES, answers.energyVibe, handleSelectEnergy)}
+        {currentStep === 2 && renderCards(MUSIC_VIBES, answers.musicVibe, handleSelectMusic)}
+      </div>
     </div>
   );
 };
