@@ -113,11 +113,7 @@ html.cursor-hidden * {
   line-height: 1.14;
   letter-spacing: -0.015em;
   color: var(--text-primary);
-  background: linear-gradient(180deg, #4a2233 0%, #8a3059 58%, var(--accent) 120%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 1px 30px rgba(224, 112, 154, 0.1);
+  text-shadow: 0 1px 20px rgba(224, 112, 154, 0.08);
 }
 
 .section-title {

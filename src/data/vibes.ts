@@ -6,7 +6,7 @@ export const MEET_VIBES: MeetVibeOption[] = [
     emoji: '☕',
     title: 'Coffee & random conversations',
     description: 'A warm cozy corner, good iced latte, and talking about anything and everything.',
-    heading: 'So... coffee? ☕',
+    heading: 'So... coffee?',
     accentBadge: 'Warm & Caffeinated',
     defaultPlaces: ['Third Wave Coffee', 'Subko Coffee Roasters', 'A quiet aesthetic café', 'Roastery Coffee House']
   },
@@ -15,7 +15,7 @@ export const MEET_VIBES: MeetVibeOption[] = [
     emoji: '🦁',
     title: 'Zoo + wandering around',
     description: 'Walking under the trees, checking out goofy animals, and laughing at weird birds.',
-    heading: 'So... zoo day? 🦁',
+    heading: 'So... zoo day?',
     accentBadge: 'Wild & Scenic',
     defaultPlaces: ['City Zoological Park', 'Botanical Garden & Safari', 'National Zoo Walk', 'Nature Sanctuary']
   },
@@ -24,7 +24,7 @@ export const MEET_VIBES: MeetVibeOption[] = [
     emoji: '🍜',
     title: 'Food + exploring somewhere new',
     description: 'Hunting down the best ramen or street food spot and having questionable conversations.',
-    heading: 'So... food & questionable conversations? 🍜',
+    heading: 'So... food & questionable conversations?',
     accentBadge: 'Delicious & Spontaneous',
     defaultPlaces: ['That cozy ramen/dumpling spot', 'Night street food market', 'Indie Italian bistro', 'Our favorite dessert corner']
   },
@@ -33,7 +33,7 @@ export const MEET_VIBES: MeetVibeOption[] = [
     emoji: '🌆',
     title: 'Walk + talking about everything',
     description: 'Golden hour stroll, cool evening breeze, and zero hurry to be anywhere else.',
-    heading: "So... let's go for an evening walk? 🌆",
+    heading: "So... let's go for an evening walk?",
     accentBadge: 'Golden Hour & Gentle',
     defaultPlaces: ['Lakefront promenade', 'Old heritage tree-lined lane', 'Rooftop garden walkway', 'Quiet neighborhood park']
   },
@@ -42,7 +42,7 @@ export const MEET_VIBES: MeetVibeOption[] = [
     emoji: '🎬',
     title: 'Movie + excessive snacks',
     description: 'Recliner seats, oversized popcorn, and dissecting the entire plot afterwards.',
-    heading: 'So... movie & snacks? 🎬',
+    heading: 'So... movie & snacks?',
     accentBadge: 'Cinematic & Chill',
     defaultPlaces: ['IMAX / PVR Director’s Cut', 'Open-air cinema night', 'Cozy indie screening space', 'Drive-in theatre']
   },
@@ -51,7 +51,7 @@ export const MEET_VIBES: MeetVibeOption[] = [
     emoji: '🎲',
     title: 'Something completely random',
     description: 'Flip a coin, take a turn we have never taken, and figure it out as we go.',
-    heading: "So... let's do something completely random? 🎲",
+    heading: "So... let's do something completely random?",
     accentBadge: 'Unpredictable & Fun',
     defaultPlaces: ['Arcade & bowling alley', 'Pottery / art studio session', 'Bookstore hunt + gelato', 'Mystery destination']
   }
