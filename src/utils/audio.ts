@@ -5,7 +5,6 @@ let audioCtx: AudioContext | null = null;
 let userHasInteracted = false;
 
 function getContext(): AudioContext | null {
-  if (!userHasInteracted) return null;
   if (!audioCtx) {
     try {
       const AC = window.AudioContext || (window as any).webkitAudioContext;
@@ -15,7 +14,7 @@ function getContext(): AudioContext | null {
       return null;
     }
   }
-  if (audioCtx.state === 'suspended') {
+  if (audioCtx.state === 'suspended' && userHasInteracted) {
     audioCtx.resume().catch(() => {});
   }
   return audioCtx;
@@ -23,6 +22,9 @@ function getContext(): AudioContext | null {
 
 export function markInteracted() {
   userHasInteracted = true;
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
 }
 
 function playTone(
