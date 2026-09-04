@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Flower2, Sparkles } from 'lucide-react';
+import { Flower2, HeartHandshake } from 'lucide-react';
 import { playReveal, playSuccess, playClick, playSelect } from '../../utils/audio';
 import { logEvent } from '../../utils/logger';
 import { setMood } from '../../utils/mood';
@@ -9,29 +9,31 @@ interface Props {
   onNext: () => void;
 }
 
-const PERSUASIVE_REASONS = [
-  { buttonText: 'wait— are you sure? 👀', reason: 'reason #1: i make top tier iced coffee & cafe recommendations ☕' },
-  { buttonText: 'hear me out first 🥺', reason: 'reason #2: 100% guarantee no awkward silences ✨' },
-  { buttonText: 'what if we get snacks? 🍪', reason: 'reason #3: you get 100% full control of the playlist 🎶' },
-  { buttonText: 'i promise im funny 😂', reason: 'reason #4: endless good vibes & genuine laugh attacks 🌸' },
-  { buttonText: 'think about the lore! 📖', reason: 'reason #5: we can leave anytime if it\'s ever boring ✌️' },
-  { buttonText: 'catch me first 🏃💨', reason: 'reason #6: this button is getting tired of running away 🙈' },
-  { buttonText: 'okay pretty please? 🎀', reason: 'reason #7: just one low-stakes meet, you won\'t regret it 💕' },
-  { buttonText: 'click yes already ✨', reason: 'final reason: you know you want to say yes 🌟' },
+// Playful compromising reasons shown directly ON the button
+const COMPROMISE_BUTTON_TEXTS = [
+  'wait, hear me out 🥺',
+  'what if I buy you iced coffee? ☕',
+  'you pick the playlist, I promise 🎶',
+  'free snacks on every study date 🍪',
+  'we can leave after 20 mins if boring ✌️',
+  'okay, one tiny chance? 🙈',
+  'pretty please? 🎀',
+  'really no? (it\'s okay, click here if sure) 🤍',
 ];
+
+const MAX_DODGES = COMPROMISE_BUTTON_TEXTS.length - 1; // 7 dodges before allowing "No"
 
 export const RevealScreen: React.FC<Props> = ({ onNext }) => {
   const [step, setStep] = useState<number>(0);
   const [yesClicked, setYesClicked] = useState<boolean>(false);
   const [yesStep, setYesStep] = useState<number>(0);
   const [saidNo, setSaidNo] = useState<boolean>(false);
-  
+
   // Dodge state
   const [dodges, setDodges] = useState<number>(0);
   const [noButtonPos, setNoButtonPos] = useState<{ x: number; y: number } | null>(null);
-  const [currentReason, setCurrentReason] = useState<string>('');
   const [buttonText, setButtonText] = useState<string>('not really');
-  
+
   const noBtnRef = useRef<HTMLButtonElement | null>(null);
   const isDodgingRef = useRef<boolean>(false);
 
@@ -50,7 +52,7 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
   const calculateSafeDodgePosition = useCallback(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const btnWidth = Math.min(220, vw * 0.7);
+    const btnWidth = Math.min(260, vw * 0.75);
     const btnHeight = 48;
 
     // Safe boundaries avoiding top music player and bottom phone navigation
@@ -59,16 +61,15 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
     const minY = 85;
     const maxY = Math.max(minY, vh - btnHeight - 90);
 
-    // Pick random coordinates
     let rx = Math.floor(minX + Math.random() * (maxX - minX));
     let ry = Math.floor(minY + Math.random() * (maxY - minY));
 
-    // If existing position exists, ensure it jumps away significantly
+    // Ensure it jumps away noticeably from previous position
     if (noButtonPos) {
       const dist = Math.hypot(rx - noButtonPos.x, ry - noButtonPos.y);
-      if (dist < 140) {
-        rx = rx < vw / 2 ? Math.min(maxX, rx + 160) : Math.max(minX, rx - 160);
-        ry = ry < vh / 2 ? Math.min(maxY, ry + 140) : Math.max(minY, ry - 140);
+      if (dist < 130) {
+        rx = rx < vw / 2 ? Math.min(maxX, rx + 140) : Math.max(minX, rx - 140);
+        ry = ry < vh / 2 ? Math.min(maxY, ry + 120) : Math.max(minY, ry - 120);
       }
     }
 
@@ -78,11 +79,17 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
   // Handle dodge triggered by mouse approach, hover, or mobile tap/touch
   const handleDodge = useCallback((e?: React.SyntheticEvent | MouseEvent | TouchEvent) => {
     if (yesClicked || isDodgingRef.current) return;
-    isDodgingRef.current = true;
+
+    // After MAX_DODGES, stop running away so she has the genuine option to say no
+    if (dodges >= MAX_DODGES) {
+      return;
+    }
 
     if (e && 'preventDefault' in e) {
       e.preventDefault();
     }
+
+    isDodgingRef.current = true;
 
     // Gentle haptic feedback on mobile if supported
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -91,24 +98,28 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
 
     playSelect();
 
-    const newDodges = dodges + 1;
-    setDodges(newDodges);
+    const nextDodgeCount = dodges + 1;
+    setDodges(nextDodgeCount);
 
-    const reasonObj = PERSUASIVE_REASONS[(newDodges - 1) % PERSUASIVE_REASONS.length];
-    setButtonText(reasonObj.buttonText);
-    setCurrentReason(reasonObj.reason);
+    const nextText = COMPROMISE_BUTTON_TEXTS[Math.min(nextDodgeCount - 1, COMPROMISE_BUTTON_TEXTS.length - 1)];
+    setButtonText(nextText);
 
-    const newPos = calculateSafeDodgePosition();
-    setNoButtonPos(newPos);
+    // If she reached the final option, let the button rest near the bottom center
+    if (nextDodgeCount > MAX_DODGES) {
+      setNoButtonPos(null);
+    } else {
+      const newPos = calculateSafeDodgePosition();
+      setNoButtonPos(newPos);
+    }
 
     setTimeout(() => {
       isDodgingRef.current = false;
     }, 180);
   }, [dodges, yesClicked, calculateSafeDodgePosition]);
 
-  // Proximity check on desktop only: if cursor gets within 60px of the button, dodge
+  // Proximity check on desktop only: if cursor gets within 55px of the button, dodge
   useEffect(() => {
-    if (step < 5 || yesClicked) return;
+    if (step < 5 || yesClicked || dodges >= MAX_DODGES) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const btn = noBtnRef.current;
@@ -118,7 +129,6 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
       const btnCenterY = rect.top + rect.height / 2;
       const dist = Math.hypot(e.clientX - btnCenterX, e.clientY - btnCenterY);
 
-      // Only dodge if cursor is strictly moving close to the button (within 55px)
       if (dist < 55) {
         handleDodge(e);
       }
@@ -126,7 +136,7 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [step, yesClicked, handleDodge]);
+  }, [step, yesClicked, dodges, handleDodge]);
 
   const lineStyle = (visible: boolean): React.CSSProperties => ({
     opacity: visible ? 1 : 0,
@@ -153,8 +163,17 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
   };
 
   const handleNoClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    handleDodge(e);
+    // If still in dodge phase, dodge
+    if (dodges < MAX_DODGES) {
+      e.preventDefault();
+      handleDodge(e);
+      return;
+    }
+
+    // If reached max dodges, she can genuinely say no gracefully
+    playClick();
+    logEvent('reveal_response', { answer: 'no', dodges });
+    setSaidNo(true);
   };
 
   const handleContinueAfterYes = () => {
@@ -162,9 +181,28 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
     onNext();
   };
 
-  // She actually said no
+  // Graceful, sweet rejection screen if she chooses "No" after all compromises
   if (saidNo) {
-    return <div style={{ position: 'fixed', inset: 0, zIndex: 100000, background: '#ffffff' }} />;
+    return (
+      <div className="screen-wrapper experience-container" style={{ padding: '2.5rem 1.2rem', textAlign: 'center' }}>
+        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--accent-soft)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+          <HeartHandshake size={28} />
+        </div>
+        <h2 className="display-title" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', marginBottom: '0.8rem' }}>
+          I understand 🌸
+        </h2>
+        <p className="cursive-label" style={{ fontSize: '1.35rem', maxWidth: '480px', margin: '0 auto 1.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Thank you for being honest with me. No awkwardness at all — I still think you're genuinely amazing. Wishing you the absolute best ✨
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="btn-secondary"
+          style={{ fontSize: '0.95rem', padding: '10px 24px', borderRadius: 'var(--radius-full)' }}
+        >
+          <span>start over ↺</span>
+        </button>
+      </div>
+    );
   }
 
   // YES reaction sub-screen
@@ -232,33 +270,7 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
         </div>
       </div>
 
-      {/* Persuasive reason bubble if user attempted to click No */}
-      {currentReason && step >= 5 && !yesClicked && (
-        <div
-          className="animate-fade-in-up font-cursive"
-          style={{
-            marginTop: '1.2rem',
-            padding: '7px 18px',
-            background: 'var(--accent-soft)',
-            color: 'var(--text-accent)',
-            borderRadius: 'var(--radius-full)',
-            border: '1px solid var(--accent-border)',
-            fontSize: '1.15rem',
-            fontWeight: 600,
-            textAlign: 'center',
-            maxWidth: '92vw',
-            boxShadow: 'var(--shadow-sm)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          <Sparkles size={15} style={{ flexShrink: 0 }} />
-          <span>{currentReason}</span>
-        </div>
-      )}
-
-      {/* Action Buttons: Yes & No (stationary initially, No dodges on close approach or touch) */}
+      {/* Action Buttons: Yes & No (stationary initially, No dodges on close approach / touch with compromising reasons) */}
       <div
         style={{
           ...lineStyle(step >= 5),
@@ -268,11 +280,11 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
           gap: '16px',
           flexWrap: 'wrap',
           minHeight: '65px',
-          marginTop: '1.5rem',
+          marginTop: '1.8rem',
           pointerEvents: step >= 5 ? 'auto' : 'none',
           position: 'relative',
           width: '100%',
-          maxWidth: '480px'
+          maxWidth: '520px'
         }}
       >
         {/* YES Button — grows slightly with each dodge attempt */}
@@ -291,21 +303,22 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
           <span>yes, let's find out</span>
         </button>
 
-        {/* NO Button — initially in-flow beside YES, jumps to safe spot only upon approach / touch */}
-        {!noButtonPos ? (
+        {/* NO Button — in-flow beside YES initially or when settled after compromises */}
+        {(!noButtonPos || dodges >= MAX_DODGES) ? (
           <button
             ref={noBtnRef}
             onClick={handleNoClick}
-            onPointerEnter={handleDodge}
-            onPointerDown={handleDodge}
-            onTouchStart={handleDodge}
+            onPointerEnter={dodges < MAX_DODGES ? handleDodge : undefined}
+            onPointerDown={dodges < MAX_DODGES ? handleDodge : undefined}
+            onTouchStart={dodges < MAX_DODGES ? handleDodge : undefined}
             className="btn-secondary"
             style={{
-              fontSize: '0.98rem',
-              padding: '12px 22px',
+              fontSize: '0.96rem',
+              padding: '12px 20px',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              touchAction: 'none'
+              touchAction: 'none',
+              maxWidth: 'calc(100vw - 40px)'
             }}
           >
             <span>{buttonText}</span>
@@ -313,8 +326,8 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
         ) : null}
       </div>
 
-      {/* Dodged NO button in absolute / fixed position */}
-      {step >= 5 && !yesClicked && noButtonPos && (
+      {/* Dodged NO button in floating safe position during compromise phase */}
+      {step >= 5 && !yesClicked && noButtonPos && dodges < MAX_DODGES && (
         <button
           ref={noBtnRef}
           onClick={handleNoClick}
@@ -327,7 +340,7 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
             top: 0,
             left: 0,
             zIndex: 90,
-            fontSize: '0.98rem',
+            fontSize: '0.96rem',
             padding: '11px 20px',
             transform: `translate3d(${noButtonPos.x}px, ${noButtonPos.y}px, 0)`,
             transition: 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
