@@ -59,6 +59,9 @@ function line(e: Ev): string {
     case 'exit_cancelled': return '↩️ Changed her mind and stayed';
     case 'exit_message': return g(e, 'message') ? `✉️ Parting words: "${g(e, 'message')}"` : '✉️ Left without writing anything';
     case 'exit_confirmed': return '👋 Closed the experience and left';
+    case 'review_opened': return '💬 Opened the review box';
+    case 'review_cancelled': return '💬 Closed the review box without sending';
+    case 'final_review': return g(e, 'message') ? `⭐ Her review: "${g(e, 'message')}"` : '⭐ Sent an empty review';
     default: return `• ${e.type}`;
   }
 }

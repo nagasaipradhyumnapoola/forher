@@ -45,6 +45,10 @@ export const App: React.FC = () => {
     meetingPlan: { vibe: 'coffee', place: 'A quiet aesthetic café', date: 'This Saturday', time: '5:00 PM' },
   });
 
+  // The verification gate must look like an ordinary, impersonal portal:
+  // no ambient pink, no music, no decorative cursor.
+  const isGate = appState.currentScreen === 'auth';
+
   // Kick off logging + opening mood once (admin route logs nothing).
   useEffect(() => {
     if (admin) return;
@@ -104,10 +108,11 @@ export const App: React.FC = () => {
 
   return (
     <>
-      <CursorFX />
+      {!isGate && <CursorFX />}
       <main style={{ minHeight: '100vh', width: '100%', position: 'relative' }}>
-        <AmbientBackground />
-        <SoundPlayer />
+        {isGate && <div className="gate-backdrop" />}
+        {!isGate && <AmbientBackground />}
+        {!isGate && <SoundPlayer />}
         {/* she can leave at any point, and say whatever she wants on the way out */}
         <ExitDoor screen={appState.currentScreen} />
 

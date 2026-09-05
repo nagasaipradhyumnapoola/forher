@@ -10,8 +10,9 @@ const CORRECT_CODE = '830';
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓'];
 
 /**
- * Deliberately plain / formal. This is the first thing she sees, and it should
- * give away nothing about what the rest of the experience is.
+ * Deliberately impersonal. This is the first thing she sees and it must read as
+ * an ordinary access page — no colour, no music, no decoration, nothing that
+ * hints at what the rest of this is.
  */
 export const AuthScreen: React.FC<Props> = ({ onNext }) => {
   const [code, setCode] = useState<string>('');
@@ -56,34 +57,33 @@ export const AuthScreen: React.FC<Props> = ({ onNext }) => {
     if (next.length === 3) setTimeout(() => submit(next), 280);
   };
 
+  const label: React.CSSProperties = { fontFamily: 'var(--font-sans)', color: '#667085' };
+
   return (
     <div className="screen-wrapper experience-container">
       <div
-        className={`paper-card ${error ? 'animate-shake' : 'animate-fade-in-up'}`}
-        style={{ padding: '1.6rem 1.4rem 1.4rem', width: 'min(272px, 90vw)' }}
+        className={`paper-card formal-card ${error ? 'animate-shake' : ''}`}
+        style={{ padding: '1.7rem 1.5rem 1.5rem', width: 'min(280px, 90vw)' }}
       >
         <p
-          className="font-sans"
           style={{
+            ...label,
             textAlign: 'center',
-            fontSize: '0.78rem',
+            fontSize: '0.72rem',
             fontWeight: 700,
-            letterSpacing: '0.09em',
+            letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color: '#9a8791',
-            marginBottom: '0.25rem',
+            color: '#98a2b3',
+            marginBottom: '0.3rem',
           }}
         >
           verification
         </p>
-        <p
-          className="font-sans"
-          style={{ textAlign: 'center', fontSize: '0.86rem', color: '#8d7a84', marginBottom: '1.1rem' }}
-        >
-          enter your access code to continue
+        <p style={{ ...label, textAlign: 'center', fontSize: '0.88rem', color: '#475467', marginBottom: '1.2rem' }}>
+          Enter your access code to continue
         </p>
 
-        <div className="code-dots" style={{ marginBottom: '0.95rem' }}>
+        <div className="code-dots" style={{ marginBottom: '1rem' }}>
           {[0, 1, 2].map((i) => (
             <div key={i} className={`code-box ${code[i] ? 'filled' : ''}`}>
               {code[i] ? '•' : ''}
@@ -106,29 +106,36 @@ export const AuthScreen: React.FC<Props> = ({ onNext }) => {
         </div>
 
         <p
-          className="font-sans"
           style={{
+            ...label,
             textAlign: 'center',
-            marginTop: '0.85rem',
-            fontSize: '0.8rem',
-            color: error ? 'var(--text-accent)' : '#9a8791',
+            marginTop: '0.95rem',
+            fontSize: '0.78rem',
+            color: error ? '#b42318' : '#98a2b3',
           }}
         >
-          {error ? 'incorrect code — try again' : 'hint: last 3 digits of your Reg ID'}
+          {error ? 'Incorrect code. Please try again.' : 'Hint: last 3 digits of your Reg ID'}
         </p>
 
         {showHint && !error && (
-          <div className="animate-fade-in-up" style={{ textAlign: 'center', marginTop: '0.3rem' }}>
+          <div style={{ textAlign: 'center', marginTop: '0.35rem' }}>
             <button
               onClick={() => {
                 playSelect();
                 setCode(CORRECT_CODE);
                 setTimeout(() => submit(CORRECT_CODE), 300);
               }}
-              className="btn-ghost"
-              style={{ fontSize: '0.82rem', fontFamily: 'var(--font-sans)', color: '#9a8791', textDecoration: 'underline' }}
+              style={{
+                ...label,
+                background: 'none',
+                border: 'none',
+                fontSize: '0.78rem',
+                color: '#667085',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+              }}
             >
-              having trouble? continue anyway
+              Having trouble? Continue anyway
             </button>
           </div>
         )}

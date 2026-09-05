@@ -211,6 +211,12 @@ function eventLine(e: SessionEvent): string {
       return g('message') ? `✉️ Parting words: “${g('message')}”` : '✉️ Left without writing anything';
     case 'exit_confirmed':
       return '👋 Closed the experience and left';
+    case 'review_opened':
+      return '💬 Opened the review box';
+    case 'review_cancelled':
+      return '💬 Closed the review box without sending';
+    case 'final_review':
+      return g('message') ? '⭐ Her review: “' + g('message') + '”' : '⭐ Sent an empty review';
     default:
       return `• ${e.type}`;
   }
@@ -273,6 +279,16 @@ function renderSessionBody(s: SessionPayload, includeRaw: boolean): string {
     lines.push('## Before she left');
     lines.push('');
     lines.push(text ? '> ' + text.replace(/\n/g, '\n> ') : '_(she left without writing anything)_');
+    lines.push('');
+  }
+
+  // Her closing word on the experience itself.
+  const review = [...s.events].reverse().find((e) => e.type === 'final_review');
+  if (review) {
+    const rtext = str((review as Record<string, unknown>).message);
+    lines.push('## Her review');
+    lines.push('');
+    lines.push(rtext ? '> ' + rtext.replace(/\n/g, '\n> ') : '_(sent without writing anything)_');
     lines.push('');
   }
 

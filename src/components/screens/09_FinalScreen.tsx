@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import { playReveal, playClick } from '../../utils/audio';
 import { logEvent } from '../../utils/logger';
 import { ScreenDecor } from '../fx/ScreenDecor';
+import { EndReview } from '../fx/EndReview';
 
 interface Props {
   plan: MeetingPlan;
@@ -135,6 +136,7 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
             {copied ? <Check size={14} /> : <Share2 size={14} />}
             <span>{copied ? 'copied!' : 'copy plan'}</span>
           </button>
+          <EndReview />
         </div>
 
         <p className="cursive-small final-ps" style={{ marginTop: '1.6rem', lineHeight: 1.55, color: 'var(--text-secondary)', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
