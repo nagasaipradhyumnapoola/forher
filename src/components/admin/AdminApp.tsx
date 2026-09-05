@@ -190,22 +190,70 @@ export const AdminApp: React.FC = () => {
                 started {fmt(s.startedAt)} · {s.events.length} events · reached {uniqueScreens.length}/9 screens
               </div>
 
+              {/* Compatibility Vibes & Preferences */}
+              {(s.events.some((e) => e.type.startsWith('compat_') || e.type === 'mystery_pick')) && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                  {s.events.find((e) => e.type === 'mystery_pick') && (
+                    <span style={{ fontSize: '0.8rem', padding: '3px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.7)', border: '1px solid var(--border)' }}>
+                      🃏 Guessed: <strong>{g(s.events.find((e) => e.type === 'mystery_pick')!, 'label')}</strong>
+                    </span>
+                  )}
+                  {s.events.find((e) => e.type === 'compat_meet') && (
+                    <span style={{ fontSize: '0.8rem', padding: '3px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(216,108,123,0.1)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>
+                      ☕ Meet: <strong>{g(s.events.find((e) => e.type === 'compat_meet')!, 'title')}</strong>
+                    </span>
+                  )}
+                  {s.events.find((e) => e.type === 'compat_energy') && (
+                    <span style={{ fontSize: '0.8rem', padding: '3px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.7)', border: '1px solid var(--border)' }}>
+                      ✨ Energy: <strong>{g(s.events.find((e) => e.type === 'compat_energy')!, 'title')}</strong>
+                    </span>
+                  )}
+                  {s.events.find((e) => e.type === 'compat_music') && (
+                    <span style={{ fontSize: '0.8rem', padding: '3px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.7)', border: '1px solid var(--border)' }}>
+                      🎧 Playlist: <strong>{g(s.events.find((e) => e.type === 'compat_music')!, 'title')}</strong>
+                    </span>
+                  )}
+                </div>
+              )}
+
               {plan && (
-                <div style={{ marginTop: '10px', fontSize: '0.9rem' }}>
-                  <strong style={{ color: 'var(--text-primary)' }}>Plan:</strong>{' '}
-                  <span style={{ color: 'var(--text-secondary)' }}>{g(plan, 'vibe')} · {g(plan, 'place')} · {g(plan, 'date')} · {g(plan, 'time')}</span>
+                <div style={{ marginTop: '12px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.6)', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                  <strong style={{ color: 'var(--accent)' }}>📍 Planned Date:</strong>{' '}
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {g(plan, 'vibe')} · {g(plan, 'place')} · {g(plan, 'date')} · {g(plan, 'time')}
+                  </span>
                 </div>
               )}
 
               {love && (g(love, 'loveLanguage') || g(love, 'feltAppreciated')) && (
-                <div style={{ marginTop: '10px', fontSize: '0.88rem', color: 'var(--text-secondary)', borderLeft: '3px solid var(--accent)', paddingLeft: '10px' }}>
-                  {g(love, 'loveLanguage') && <div><em>love language:</em> {g(love, 'loveLanguage')}</div>}
-                  {g(love, 'feltAppreciated') && <div><em>appreciated:</em> {g(love, 'feltAppreciated')}</div>}
+                <div style={{ marginTop: '10px', fontSize: '0.88rem', color: 'var(--text-primary)', background: 'var(--accent-soft)', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)' }}>
+                  {g(love, 'loveLanguage') && (
+                    <div style={{ marginBottom: g(love, 'feltAppreciated') ? '6px' : 0 }}>
+                      <strong style={{ color: 'var(--accent)' }}>💌 Love language:</strong> {g(love, 'loveLanguage')}
+                    </div>
+                  )}
+                  {g(love, 'feltAppreciated') && (
+                    <div>
+                      <strong style={{ color: 'var(--accent)' }}>✨ What makes her feel appreciated:</strong> {g(love, 'feltAppreciated')}
+                    </div>
+                  )}
                 </div>
               )}
 
-              <button onClick={() => setOpen((o) => ({ ...o, [s.name]: !o[s.name] }))} className="btn-ghost" style={{ marginTop: '10px', paddingLeft: 0 }}>
-                {isOpen ? '▾ hide timeline' : '▸ show full timeline'}
+              {/* Exit or Review parting notes if any */}
+              {s.events.find((e) => e.type === 'exit_message' && g(e, 'message')) && (
+                <div style={{ marginTop: '10px', fontSize: '0.88rem', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.03)', padding: '8px 12px', borderRadius: 'var(--radius-md)' }}>
+                  ✉️ <strong>Parting words:</strong> "{g(s.events.find((e) => e.type === 'exit_message')!, 'message')}"
+                </div>
+              )}
+              {s.events.find((e) => e.type === 'final_review' && g(e, 'message')) && (
+                <div style={{ marginTop: '10px', fontSize: '0.88rem', color: 'var(--text-accent)', background: 'var(--accent-soft)', padding: '8px 12px', borderRadius: 'var(--radius-md)' }}>
+                  ⭐ <strong>Her review note:</strong> "{g(s.events.find((e) => e.type === 'final_review')!, 'message')}"
+                </div>
+              )}
+
+              <button onClick={() => setOpen((o) => ({ ...o, [s.name]: !o[s.name] }))} className="btn-ghost" style={{ marginTop: '12px', paddingLeft: 0, fontSize: '0.85rem' }}>
+                {isOpen ? '▾ hide full step-by-step timeline' : '▸ show full step-by-step timeline'}
               </button>
 
               {isOpen && (
