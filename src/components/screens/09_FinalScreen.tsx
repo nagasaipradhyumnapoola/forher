@@ -54,11 +54,11 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
   };
 
   return (
-    <div className="screen-wrapper experience-container final-screen" style={{ paddingBottom: '3rem' }}>
+    <div className="screen-wrapper experience-container final-screen" style={{ paddingBottom: '1rem' }}>
       <ScreenDecor variant="ticket" />
       {/* Sequential emotional payoff */}
-      <div className="final-seq" style={{ minHeight: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.9rem', marginBottom: '1.5rem' }}>
-        <h1 className="display-title" style={{ ...lineStyle(step >= 1), fontSize: 'clamp(2.4rem, 5.2vw, 3.8rem)' }}>
+      <div className="final-seq" style={{ minHeight: '150px', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.55rem', marginBottom: '1rem' }}>
+        <h1 className="display-title" style={{ ...lineStyle(step >= 1), fontSize: 'clamp(2rem, 4.4vw, 3rem)' }}>
           okay.
         </h1>
 
@@ -82,8 +82,8 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
       </div>
 
       {/* Souvenir Ticket */}
-      <div style={{ width: '100%', maxWidth: '480px', ...lineStyle(step >= 6), pointerEvents: step >= 6 ? 'auto' : 'none' }}>
-        <div className="plan-ticket" style={{ padding: '2.2rem 2rem', textAlign: 'left', marginBottom: '1.2rem' }}>
+      <div style={{ width: '100%', maxWidth: '460px', ...lineStyle(step >= 6), pointerEvents: step >= 6 ? 'auto' : 'none' }}>
+        <div className="plan-ticket" style={{ padding: '1.5rem 1.7rem', textAlign: 'left', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <span className="badge-label" style={{ fontSize: '0.76rem' }}>
               <Flower2 size={11} /> souvenir ticket
@@ -93,12 +93,12 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
             </span>
           </div>
 
-          <h3 className="font-serif" style={{ fontSize: '2rem', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>the plan</h3>
-          <p className="cursive-small" style={{ marginBottom: '1rem' }}>looks like we have a date.</p>
+          <h3 className="font-serif" style={{ fontSize: '1.8rem', color: 'var(--text-primary)', marginBottom: '0.15rem' }}>the plan</h3>
+          <p className="cursive-small" style={{ marginBottom: '0.7rem' }}>looks like we have a date.</p>
 
-          <div className="ticket-divider" />
+          <div className="ticket-divider" style={{ margin: '0.7rem 0' }} />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.4rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', marginBottom: '1rem' }}>
             {[
               { icon: vibeData.emoji, label: 'Activity', value: vibeData.title, isEmoji: true },
               { icon: <MapPin size={15} />, label: 'Location', value: plan.place },
@@ -121,8 +121,8 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
             ))}
           </div>
 
-          <div style={{ textAlign: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
-            <p className="font-cursive" style={{ fontSize: '1.4rem', color: 'var(--text-accent)' }}>
+          <div style={{ textAlign: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.7rem' }}>
+            <p className="font-cursive" style={{ fontSize: '1.3rem', color: 'var(--text-accent)' }}>
               see you there :)
             </p>
           </div>
@@ -139,7 +139,7 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
           <EndReview />
         </div>
 
-        <p className="cursive-small final-ps" style={{ marginTop: '1.6rem', lineHeight: 1.55, color: 'var(--text-secondary)', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
+        <p className="cursive-small final-ps" style={{ marginTop: '0.9rem', lineHeight: 1.4, color: 'var(--text-secondary)', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
           p.s. — I rewrote this way too many times. nothing felt good enough for you. so… hi 🙈
         </p>
       </div>
