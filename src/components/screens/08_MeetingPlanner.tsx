@@ -153,7 +153,7 @@ export const MeetingPlanner: React.FC<Props> = ({ initialPlan, onSavePlan }) => 
         </div>
 
         {/* Live Preview Ticket */}
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div className="planner-preview" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div className="plan-ticket" style={{ padding: '2rem 1.8rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <span className="badge-label" style={{ fontSize: '0.8rem', padding: '3px 10px' }}>live preview</span>

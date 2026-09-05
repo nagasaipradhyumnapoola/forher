@@ -10,6 +10,9 @@ out/
 .env.local
 .env.*.local
 
+# Local session log machine-index cache (responses.md is the human-readable one)
+server/responses.index.json
+
 # Logs
 logs
 *.log
@@ -26,3 +29,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Local session log — runtime data written by the dev server (never commit responses)
+server/responses.md

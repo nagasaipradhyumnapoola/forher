@@ -3,6 +3,7 @@ import { ScreenId, AppState, CompatibilityAnswers, LoveLanguageAnswers, MeetingP
 import { AmbientBackground } from './components/ambient/AmbientBackground';
 import { SoundPlayer } from './components/ambient/SoundPlayer';
 import { CursorFX } from './components/fx/CursorFX';
+import { ExitDoor } from './components/fx/ExitDoor';
 import { AdminApp } from './components/admin/AdminApp';
 import { logEvent, logOnce, hasEvent } from './utils/logger';
 import { setMood, type Mood } from './utils/mood';
@@ -107,6 +108,8 @@ export const App: React.FC = () => {
       <main style={{ minHeight: '100vh', width: '100%', position: 'relative' }}>
         <AmbientBackground />
         <SoundPlayer />
+        {/* she can leave at any point, and say whatever she wants on the way out */}
+        <ExitDoor screen={appState.currentScreen} />
 
         {appState.currentScreen === 'auth' && <AuthScreen onNext={() => navigateTo('opening')} />}
         {appState.currentScreen === 'opening' && <OpeningScreen onNext={() => navigateTo('mystery')} />}

@@ -17,7 +17,17 @@
  * chooses to report.
  */
 
+import { promises as fsp } from 'node:fs';
+import { join as pathJoin } from 'node:path';
+
 const GH_API = 'https://api.github.com';
+
+// Local mirror — one markdown file with every session's full timeline, numbered.
+// Written whenever the server has a writable disk (e.g. `npm run dev`); silently
+// skipped on read-only serverless filesystems (there, GitHub is the store).
+const LOCAL_RESPONSES_FILE = pathJoin(process.cwd(), 'server', 'responses.md');
+// Machine index kept in a separate hidden file so responses.md stays purely human-readable.
+const LOCAL_INDEX_FILE = pathJoin(process.cwd(), 'server', 'responses.index.json');
 
 interface Env {
   token: string;
@@ -193,12 +203,20 @@ function eventLine(e: SessionEvent): string {
       return '📋 Copied the plan to share';
     case 'complete':
       return '🎉 Reached the final screen';
+    case 'exit_opened':
+      return '🚪 Opened the “leave” door';
+    case 'exit_cancelled':
+      return '↩️ Changed her mind and stayed';
+    case 'exit_message':
+      return g('message') ? `✉️ Parting words: “${g('message')}”` : '✉️ Left without writing anything';
+    case 'exit_confirmed':
+      return '👋 Closed the experience and left';
     default:
       return `• ${e.type}`;
   }
 }
 
-export function renderMarkdown(s: SessionPayload): string {
+function renderSessionBody(s: SessionPayload, includeRaw: boolean): string {
   const now = new Date().toISOString();
   const screens: string[] = [];
   for (const e of s.events) {
@@ -248,6 +266,16 @@ export function renderMarkdown(s: SessionPayload): string {
     lines.push('');
   }
 
+  // Whatever she chose to say on her way out — the last word, verbatim.
+  const exitMsg = [...s.events].reverse().find((e) => e.type === 'exit_message');
+  if (exitMsg) {
+    const text = str((exitMsg as Record<string, unknown>).message);
+    lines.push('## Before she left');
+    lines.push('');
+    lines.push(text ? '> ' + text.replace(/\n/g, '\n> ') : '_(she left without writing anything)_');
+    lines.push('');
+  }
+
   if (lastPlan) {
     const p = lastPlan as Record<string, unknown>;
     lines.push('## Final plan');
@@ -261,15 +289,22 @@ export function renderMarkdown(s: SessionPayload): string {
     lines.push('');
   }
 
-  // Structured appendix — parsed back by the /admin dashboard.
-  lines.push('## Raw data');
-  lines.push('');
-  lines.push('```json');
-  lines.push(JSON.stringify({ ...s, completed, updatedAt: now }, null, 2));
-  lines.push('```');
-  lines.push('');
+  if (includeRaw) {
+    // Structured appendix — parsed back by the /admin dashboard.
+    lines.push('## Raw data');
+    lines.push('');
+    lines.push('```json');
+    lines.push(JSON.stringify({ ...s, completed, updatedAt: now }, null, 2));
+    lines.push('```');
+    lines.push('');
+  }
 
   return lines.join('\n');
+}
+
+// GitHub per-session file — full block including the machine-readable Raw data.
+export function renderMarkdown(s: SessionPayload): string {
+  return renderSessionBody(s, true);
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -280,14 +315,21 @@ interface SessionSet {
   id: string;
   started: string;
   updated: string;
+  completed: boolean;
   answer: string; // 'yes' | 'no' | ''
+  dodges: number;
+  passcode: 'ok' | 'failed' | '';
+  passcodeAttempts: number;
+  guess: string;
   meet: string;
   energy: string;
   music: string;
   loveLanguage: string;
   feltAppreciated: string;
   plan: { vibe: string; place: string; date: string; time: string } | null;
-  completed: boolean;
+  changes: string[];
+  copied: boolean;
+  screens: string[];
 }
 
 function summarize(s: SessionPayload): SessionSet {
@@ -297,41 +339,90 @@ function summarize(s: SessionPayload): SessionSet {
   const energy = last('compat_energy');
   const music = last('compat_music');
   const love = last('love_language');
+  const guess = last('mystery_pick');
   const reveal = s.events.find((e) => e.type === 'reveal_response');
   const plan = [...s.events].reverse().find((e) => e.type === 'plan_save' || e.type === 'complete');
+  const passOk = s.events.some((e) => e.type === 'passcode_ok');
+  const passFails = s.events.filter((e) => e.type === 'passcode_fail').length;
+  const changes = s.events
+    .filter((e) => e.type === 'plan_change')
+    .map((e) => `${g(e, 'field')}: “${g(e, 'from')}” → “${g(e, 'to')}”`);
+  const screens: string[] = [];
+  for (const e of s.events) {
+    if (e.type === 'screen') {
+      const sc = str((e as Record<string, unknown>).screen);
+      if (sc && !screens.includes(sc)) screens.push(sc);
+    }
+  }
   return {
     id: s.sessionId,
     started: s.startedAt || s.events[0]?.t || '',
     updated: new Date().toISOString(),
+    completed: s.completed || s.events.some((e) => e.type === 'complete'),
     answer: g(reveal, 'answer'),
+    dodges: reveal ? Number((reveal as Record<string, unknown>).dodges) || 0 : 0,
+    passcode: passOk ? 'ok' : passFails > 0 ? 'failed' : '',
+    passcodeAttempts: passFails,
+    guess: g(guess, 'label'),
     meet: g(meet, 'title'),
     energy: g(energy, 'title'),
     music: g(music, 'title'),
     loveLanguage: g(love, 'loveLanguage'),
     feltAppreciated: g(love, 'feltAppreciated'),
     plan: plan ? { vibe: g(plan, 'vibe'), place: g(plan, 'place'), date: g(plan, 'date'), time: g(plan, 'time') } : null,
-    completed: s.completed || s.events.some((e) => e.type === 'complete'),
+    changes,
+    copied: s.events.some((e) => e.type === 'plan_copied'),
+    screens,
   };
 }
 
 function renderAggregate(map: Record<string, SessionSet>): string {
-  const rows = Object.values(map).sort((a, b) => (b.started || '').localeCompare(a.started || ''));
-  const cell = (v: string) => (v ? v.replace(/\|/g, '\\|').replace(/\n+/g, ' ').trim() : '—');
+  // insertion order = order sessions first appeared → stable numbering (#1 oldest)
+  const rows = Object.values(map);
+  const q = (v: string) => (v ? v.replace(/\n+/g, ' ').trim() : '');
   const lines: string[] = [];
-  lines.push('# Moksha — every choice, saved 🎀');
+  lines.push('# Moksha — every answer set 🎀');
   lines.push('');
-  lines.push(`_One row per session — a full set of her choices. ${rows.length} total, newest first. Auto-updated on every action; full timelines live in [\`sessions/\`](./sessions/)._`);
+  lines.push(
+    `_One numbered entry per login (a full cycle), with everything she chose listed under it. **${rows.length}** total. Auto-updates on every action; full step-by-step timelines live in [\`sessions/\`](./sessions/)._`,
+  );
   lines.push('');
-  lines.push('| When (UTC) | Answer | First-meet | Energy | Music | Love language | Feels appreciated | The plan | Done |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
-  for (const r of rows) {
-    const plan = r.plan ? `${r.plan.vibe} · ${r.plan.place} · ${r.plan.date} · ${r.plan.time}` : '—';
-    const ans = r.answer === 'yes' ? '🌸 yes' : r.answer === 'no' ? '🙃 no' : '—';
+
+  rows.forEach((r, i) => {
+    const n = i + 1;
+    const ans = r.answer === 'yes' ? '🌸 YES' : r.answer === 'no' ? '🙃 said no' : '— not yet';
+    const pass =
+      r.passcode === 'ok'
+        ? `entered correctly${r.passcodeAttempts ? ` (after ${r.passcodeAttempts} wrong)` : ''}`
+        : r.passcode === 'failed'
+          ? `only wrong tries (${r.passcodeAttempts})`
+          : '—';
+    lines.push('---');
+    lines.push('');
+    lines.push(`## ${n} · ${fmtFull(r.started)}`);
+    lines.push('');
+    lines.push(`- **Session id:** \`${r.id}\``);
+    lines.push(`- **Status:** ${r.completed ? '✅ completed the whole cycle' : '⏳ in progress'}`);
+    lines.push(`- **Answer to the ask:** ${ans}${r.dodges ? ` (dodged the “no” button ${r.dodges}×)` : ''}`);
+    lines.push(`- **Passcode:** ${pass}`);
+    lines.push(`- **Guessed who made it:** ${q(r.guess) ? `“${q(r.guess)}”` : '—'}`);
+    lines.push(`- **First-meet vibe:** ${q(r.meet) || '—'}`);
+    lines.push(`- **Energy vibe:** ${q(r.energy) || '—'}`);
+    lines.push(`- **Music vibe:** ${q(r.music) || '—'}`);
+    lines.push(`- **Love language:** ${q(r.loveLanguage) ? `“${q(r.loveLanguage)}”` : '—'}`);
+    lines.push(`- **What makes her feel appreciated:** ${q(r.feltAppreciated) ? `“${q(r.feltAppreciated)}”` : '—'}`);
     lines.push(
-      `| ${fmtFull(r.started)} | ${ans} | ${cell(r.meet)} | ${cell(r.energy)} | ${cell(r.music)} | ${cell(r.loveLanguage)} | ${cell(r.feltAppreciated)} | ${cell(plan)} | ${r.completed ? '✅' : '⏳'} |`,
+      `- **The plan:** ${r.plan ? `${q(r.plan.vibe)} · ${q(r.plan.place)} · ${q(r.plan.date)} · ${q(r.plan.time)}` : '—'}`,
     );
-  }
-  lines.push('');
+    if (r.changes && r.changes.length) lines.push(`- **Changed her mind:** ${r.changes.map(q).join('; ')}`);
+    lines.push(`- **Copied the plan:** ${r.copied ? 'yes' : 'no'}`);
+    lines.push(
+      `- **Screens reached:** ${r.screens && r.screens.length ? r.screens.map((sc) => SCREEN_LABELS[sc] || sc).join(' → ') : '—'}`,
+    );
+    lines.push(`- **Last updated:** ${fmtFull(r.updated)}`);
+    lines.push('');
+  });
+
   lines.push('<!-- machine-readable index — do not edit by hand -->');
   lines.push('```json');
   lines.push(JSON.stringify({ sessions: map }, null, 2));
@@ -409,24 +500,72 @@ async function putFile(env: Env, path: string, content: string, message: string,
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Local file mirror — server/responses.md (full timeline per session, numbered)
+// ─────────────────────────────────────────────────────────────────────────
+
+function renderLocalResponses(index: Record<string, SessionPayload>): string {
+  const entries = Object.values(index); // oldest first (order they first appeared)
+  if (entries.length === 0) return '';
+  // Each session is its own full block (same rich format as the GitHub per-session
+  // file, minus the raw-JSON appendix), separated by a clear gap so one session's
+  // record is visually distinct from the next.
+  const gap = '\n\n\n<!-- ─────────────────────────────────────────── -->\n\n---\n\n\n';
+  return entries.map((s) => renderSessionBody(s, false).trimEnd()).join(gap) + '\n';
+}
+
+async function writeLocalResponses(s: SessionPayload): Promise<void> {
+  try {
+    let index: Record<string, SessionPayload> = {};
+    try {
+      const raw = await fsp.readFile(LOCAL_INDEX_FILE, 'utf-8');
+      const parsed = JSON.parse(raw) as { sessions?: Record<string, SessionPayload> };
+      if (parsed && parsed.sessions) index = parsed.sessions;
+    } catch {
+      /* index missing/corrupt — start fresh */
+    }
+    index[s.sessionId] = {
+      sessionId: s.sessionId,
+      startedAt: s.startedAt,
+      events: s.events,
+      completed: s.completed || s.events.some((e) => e.type === 'complete'),
+    };
+    // hidden machine index (for upserting) + the clean human-readable log
+    await fsp.writeFile(LOCAL_INDEX_FILE, JSON.stringify({ sessions: index }, null, 2), 'utf-8');
+    await fsp.writeFile(LOCAL_RESPONSES_FILE, renderLocalResponses(index), 'utf-8');
+  } catch {
+    /* read-only fs (serverless) or other IO error — ignore; GitHub is the store there */
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Public operations
 // ─────────────────────────────────────────────────────────────────────────
 
 export async function logSession(raw: unknown): Promise<{ ok: boolean; skipped?: boolean; reason?: string; error?: string }> {
-  const env = readEnv();
-  if (!env) return { ok: false, skipped: true, reason: 'not_configured' };
-
   const s = sanitize(raw);
   if (!s) return { ok: false, skipped: true, reason: 'bad_payload' };
 
-  const path = `${env.dir}/session-${s.sessionId}.md`;
+  // 1) Local mirror — always attempt (works under `npm run dev`; no-op on read-only fs).
+  await writeLocalResponses(s);
+
+  // 2) GitHub — persistent store for a deployed link. Skipped if not configured.
+  const env = readEnv();
+  if (!env) return { ok: true, reason: 'local_only' };
+
+  const filePath = `${env.dir}/session-${s.sessionId}.md`;
   const md = renderMarkdown(s);
   const message = `session ${s.sessionId}: ${s.events.length} event(s)${s.completed ? ' — completed' : ''}`;
 
   for (let attempt = 0; attempt < 3; attempt++) {
-    const sha = await getSha(env, path);
+    const sha = await getSha(env, filePath);
     try {
-      await putFile(env, path, md, message, sha);
+      await putFile(env, filePath, md, message, sha);
+      // also fold this session's full choice-set into the single numbered README (best-effort)
+      try {
+        await upsertAggregate(env, summarize(s));
+      } catch {
+        /* index is best-effort — never fail the main log over it */
+      }
       return { ok: true };
     } catch (e) {
       const status = (e as { status?: number }).status;

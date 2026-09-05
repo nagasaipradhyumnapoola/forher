@@ -3,6 +3,7 @@ import { MeetVibe, EnergyVibe, MusicVibe, CompatibilityAnswers } from '../../typ
 import { MEET_VIBES, ENERGY_VIBES, MUSIC_VIBES } from '../../data/vibes';
 import { playSelect, playTransition } from '../../utils/audio';
 import { logEvent } from '../../utils/logger';
+import { ScreenDecor } from '../fx/ScreenDecor';
 
 interface Props {
   initialAnswers: CompatibilityAnswers;
@@ -50,7 +51,7 @@ export const CompatibilityGame: React.FC<Props> = ({ initialAnswers, onComplete 
   ];
 
   const renderCards = (items: { id: string; emoji: string; title: string; description: string }[], selected: string | null, onSelect: (id: any) => void) => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', width: '100%' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '7px', width: '100%' }}>
       {items.map((item) => {
         const isSelected = selected === item.id;
         return (
@@ -74,8 +75,9 @@ export const CompatibilityGame: React.FC<Props> = ({ initialAnswers, onComplete 
 
   return (
     <div className="screen-wrapper experience-container" style={{ maxWidth: '720px' }}>
+      <ScreenDecor variant="quiz" />
       {/* Progress dots */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
         {[0, 1, 2].map((idx) => (
           <div key={idx} style={{
             width: idx === currentStep ? '22px' : '8px', height: '8px',
@@ -88,7 +90,7 @@ export const CompatibilityGame: React.FC<Props> = ({ initialAnswers, onComplete 
 
       {/* Intro copy — only on step 0 */}
       {currentStep === 0 && (
-        <p className="cursive-label" style={{ marginBottom: '0.8rem', color: 'var(--text-accent)' }}>
+        <p className="cursive-label compat-intro" style={{ marginBottom: '0.8rem', color: 'var(--text-accent)' }}>
           before we get ahead of ourselves...
         </p>
       )}
@@ -96,7 +98,7 @@ export const CompatibilityGame: React.FC<Props> = ({ initialAnswers, onComplete 
       <h2 className="display-title" style={{ fontSize: 'clamp(2rem, 4.5vw, 3rem)', marginBottom: '0.4rem' }}>
         {stepTitles[currentStep].title}
       </h2>
-      <p className="subheading" style={{ marginBottom: '2rem' }}>
+      <p className="subheading" style={{ marginBottom: '1rem' }}>
         {stepTitles[currentStep].sub}
       </p>
 

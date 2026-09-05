@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import confetti from 'canvas-confetti';
 import { Flower2, HeartHandshake } from 'lucide-react';
 import { playReveal, playSuccess, playClick, playSelect } from '../../utils/audio';
 import { logEvent } from '../../utils/logger';
 import { setMood } from '../../utils/mood';
+import { ScreenDecor } from '../fx/ScreenDecor';
 
 interface Props {
   onNext: () => void;
@@ -48,32 +50,42 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Safe random coordinate generator within mobile / desktop viewport boundaries
-  const calculateSafeDodgePosition = useCallback(() => {
+  // Step the button a bounded distance directly AWAY from the cursor, kept fully
+  // on-screen. Not a random teleport — a contained dodge that never flies off.
+  const calculateSafeDodgePosition = useCallback((cursorX: number, cursorY: number) => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const btnWidth = Math.min(260, vw * 0.75);
-    const btnHeight = 48;
+    const rect = noBtnRef.current?.getBoundingClientRect();
+    const w = rect?.width || Math.min(260, vw * 0.75);
+    const h = rect?.height || 48;
 
     // Safe boundaries avoiding top music player and bottom phone navigation
-    const minX = 20;
-    const maxX = Math.max(minX, vw - btnWidth - 20);
-    const minY = 85;
-    const maxY = Math.max(minY, vh - btnHeight - 90);
+    const minX = 16;
+    const maxX = Math.max(minX, vw - w - 16);
+    const minY = 80;
+    const maxY = Math.max(minY, vh - h - 80);
+    const clampX = (v: number) => Math.max(minX, Math.min(maxX, v));
+    const clampY = (v: number) => Math.max(minY, Math.min(maxY, v));
 
-    let rx = Math.floor(minX + Math.random() * (maxX - minX));
-    let ry = Math.floor(minY + Math.random() * (maxY - minY));
+    // current top-left (fixed coords once dodging, else its in-flow rect)
+    const curX = noButtonPos ? noButtonPos.x : rect ? rect.left : (vw - w) / 2;
+    const curY = noButtonPos ? noButtonPos.y : rect ? rect.top : vh - 150;
 
-    // Ensure it jumps away noticeably from previous position
-    if (noButtonPos) {
-      const dist = Math.hypot(rx - noButtonPos.x, ry - noButtonPos.y);
-      if (dist < 130) {
-        rx = rx < vw / 2 ? Math.min(maxX, rx + 140) : Math.max(minX, rx - 140);
-        ry = ry < vh / 2 ? Math.min(maxY, ry + 120) : Math.max(minY, ry - 120);
-      }
+    // unit vector pointing from the cursor to the button → move that way
+    let dx = curX + w / 2 - cursorX;
+    let dy = curY + h / 2 - cursorY;
+    const len = Math.hypot(dx, dy) || 1;
+    const STEP = 150;
+    let nx = clampX(curX + (dx / len) * STEP);
+    let ny = clampY(curY + (dy / len) * STEP);
+
+    // pinned to an edge and barely moved? slide toward the open middle instead
+    if (Math.hypot(nx - curX, ny - curY) < 40) {
+      nx = clampX(curX + (curX + w / 2 < vw / 2 ? STEP : -STEP));
+      ny = clampY(curY + (curY + h / 2 < vh / 2 ? STEP : -STEP));
     }
 
-    return { x: rx, y: ry };
+    return { x: Math.round(nx), y: Math.round(ny) };
   }, [noButtonPos]);
 
   // Handle dodge triggered by mouse approach, hover, or mobile tap/touch
@@ -104,12 +116,25 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
     const nextText = COMPROMISE_BUTTON_TEXTS[Math.min(nextDodgeCount - 1, COMPROMISE_BUTTON_TEXTS.length - 1)];
     setButtonText(nextText);
 
+    // where is the cursor / finger right now? move away from exactly there.
+    const ev = e as unknown as { clientX?: number; clientY?: number; touches?: Array<{ clientX: number; clientY: number }> } | undefined;
+    let cx: number;
+    let cy: number;
+    if (ev && typeof ev.clientX === 'number' && typeof ev.clientY === 'number') {
+      cx = ev.clientX; cy = ev.clientY;
+    } else if (ev && ev.touches && ev.touches[0]) {
+      cx = ev.touches[0].clientX; cy = ev.touches[0].clientY;
+    } else {
+      const r = noBtnRef.current?.getBoundingClientRect();
+      cx = r ? r.left + r.width / 2 : window.innerWidth / 2;
+      cy = r ? r.top + r.height / 2 : window.innerHeight / 2;
+    }
+
     // If she reached the final option, let the button rest near the bottom center
     if (nextDodgeCount > MAX_DODGES) {
       setNoButtonPos(null);
     } else {
-      const newPos = calculateSafeDodgePosition();
-      setNoButtonPos(newPos);
+      setNoButtonPos(calculateSafeDodgePosition(cx, cy));
     }
 
     setTimeout(() => {
@@ -232,6 +257,7 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
   // Main reveal
   return (
     <div className="screen-wrapper experience-container" style={{ padding: '2rem 1.2rem', overflowX: 'hidden' }}>
+      <ScreenDecor variant="confession" />
       <div style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.9rem', textAlign: 'center', maxWidth: '580px', width: '100%' }}>
         <p className="cursive-label" style={{ ...lineStyle(step >= 1), fontSize: '1.3rem' }}>
           okay...
@@ -326,34 +352,37 @@ export const RevealScreen: React.FC<Props> = ({ onNext }) => {
         ) : null}
       </div>
 
-      {/* Dodged NO button in floating safe position during compromise phase */}
-      {step >= 5 && !yesClicked && noButtonPos && dodges < MAX_DODGES && (
-        <button
-          ref={noBtnRef}
-          onClick={handleNoClick}
-          onPointerEnter={handleDodge}
-          onPointerDown={handleDodge}
-          onTouchStart={handleDodge}
-          className="btn-secondary"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            zIndex: 90,
-            fontSize: '0.96rem',
-            padding: '11px 20px',
-            transform: `translate3d(${noButtonPos.x}px, ${noButtonPos.y}px, 0)`,
-            transition: 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
-            cursor: 'pointer',
-            touchAction: 'none',
-            whiteSpace: 'nowrap',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-            maxWidth: 'calc(100vw - 32px)'
-          }}
-        >
-          <span>{buttonText}</span>
-        </button>
-      )}
+      {/* Dodged NO button — portaled to <body> so it's viewport-fixed and never
+          clipped by the screen's transform/overflow (that was making it vanish). */}
+      {step >= 5 && !yesClicked && noButtonPos && dodges < MAX_DODGES &&
+        createPortal(
+          <button
+            ref={noBtnRef}
+            onClick={handleNoClick}
+            onPointerEnter={handleDodge}
+            onPointerDown={handleDodge}
+            onTouchStart={handleDodge}
+            className="btn-secondary"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              zIndex: 90,
+              fontSize: '0.96rem',
+              padding: '11px 20px',
+              transform: `translate3d(${noButtonPos.x}px, ${noButtonPos.y}px, 0)`,
+              transition: 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
+              cursor: 'pointer',
+              touchAction: 'none',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+              maxWidth: 'calc(100vw - 32px)'
+            }}
+          >
+            <span>{buttonText}</span>
+          </button>,
+          document.body,
+        )}
     </div>
   );
 };

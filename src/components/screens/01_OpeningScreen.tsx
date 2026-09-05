@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { markInteracted, playClick, playTransition } from '../../utils/audio';
+import { ScreenDecor } from '../fx/ScreenDecor';
+import { Envelope, Polaroid, WashiTape, Bow } from '../fx/Stickers';
 
 interface Props {
   onNext: () => void;
@@ -8,6 +10,7 @@ interface Props {
 
 export const OpeningScreen: React.FC<Props> = ({ onNext }) => {
   const [step, setStep] = useState<number>(0);
+  const [photoOk, setPhotoOk] = useState(true);
 
   useEffect(() => {
     const timers = [
@@ -38,8 +41,34 @@ export const OpeningScreen: React.FC<Props> = ({ onNext }) => {
 
   return (
     <div className="screen-wrapper experience-container">
+      <ScreenDecor variant="letter" />
+
       {/* Sequential Cinematic Lines */}
       <div style={{ minHeight: '280px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.1rem' }}>
+
+        <div style={{ ...lineStyle(step >= 1), marginBottom: '-0.2rem', position: 'relative' }}>
+          <WashiTape
+            width={74}
+            height={22}
+            rotate={-16}
+            color="rgba(150,190,240,0.7)"
+            className="sticker"
+            style={{ top: -11, left: 12, zIndex: 16 }}
+          />
+          <Polaroid rotate={-3} width={150} className="open-polaroid">
+            {photoOk ? (
+              <img
+                src="/us.jpg"
+                alt=""
+                onError={() => setPhotoOk(false)}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 45%' }}
+              />
+            ) : (
+              <Envelope size={90} open />
+            )}
+          </Polaroid>
+          <Bow size={54} color="#7fb0ea" className="sticker sticker-float" style={{ top: -20, right: -18, ['--rot' as string]: '12deg' }} />
+        </div>
 
         <h1
           className="display-title"

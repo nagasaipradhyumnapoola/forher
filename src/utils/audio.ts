@@ -59,52 +59,55 @@ function playTone(
   osc.stop(now + duration);
 }
 
+/* All UI sounds sit in a warm mid register (500–900 Hz) with soft attacks —
+   high, bright tones read as "shrill/beepy", which is what we're avoiding. */
+
 /** Whisper-soft tick — when the pointer lands on something interactive */
 let lastHover = 0;
 export function playHover() {
   const now = Date.now();
-  if (now - lastHover < 55) return; // throttle so gliding across UI stays gentle
+  if (now - lastHover < 70) return; // throttle so gliding across UI stays gentle
   lastHover = now;
-  playTone(2300, 0.035, 0.022, 'sine', 0, 1);
+  playTone(740, 0.05, 0.01, 'sine', 0, 8, 45);
 }
 
-/** Tiny soft click — for normal button presses */
+/** Tiny soft click — for normal button presses (warm wooden tap) */
 export function playClick() {
-  playTone(1850, 0.07, 0.09, 'sine', 0, 2);
-  playTone(1240, 0.05, 0.05, 'triangle', 0, 1);
+  playTone(523.25, 0.12, 0.045, 'sine', 0, 7, 100);
+  playTone(784, 0.07, 0.018, 'sine', 0, 5, 60);
 }
 
-/** Tiny "ting" — for selecting an option */
+/** Gentle "ting" — for selecting an option */
 export function playSelect() {
-  playTone(1400, 0.11, 0.1, 'sine', 0, 5);
-  setTimeout(() => playTone(2100, 0.09, 0.06, 'sine', 0, 3), 42);
+  playTone(587.33, 0.15, 0.045, 'sine', 0, 9, 120);
+  setTimeout(() => playTone(880, 0.12, 0.026, 'sine', 0, 7, 100), 55);
 }
 
 /** Warmer transition — for moving to next section */
 export function playTransition() {
-  playTone(880, 0.15, 0.06, 'sine', 0, 10);
-  setTimeout(() => playTone(1100, 0.12, 0.05, 'sine', 0, 8), 60);
-  setTimeout(() => playTone(1320, 0.1, 0.04, 'sine', 0, 6), 120);
+  playTone(392, 0.22, 0.04, 'sine', 0, 14, 180);
+  setTimeout(() => playTone(523.25, 0.2, 0.032, 'sine', 0, 12, 160), 70);
+  setTimeout(() => playTone(659.25, 0.18, 0.024, 'sine', 0, 10, 140), 140);
 }
 
 /** Soft magical chime — for reveal moments */
 export function playReveal() {
-  playTone(660, 0.25, 0.06, 'sine', 0, 15);
-  setTimeout(() => playTone(880, 0.22, 0.055, 'sine', 5, 12), 100);
-  setTimeout(() => playTone(1320, 0.2, 0.05, 'sine', -3, 10), 220);
-  setTimeout(() => playTone(1760, 0.18, 0.035, 'sine', 2, 8), 340);
+  playTone(392, 0.32, 0.04, 'sine', 0, 20, 260);
+  setTimeout(() => playTone(523.25, 0.3, 0.036, 'sine', 4, 18, 240), 120);
+  setTimeout(() => playTone(659.25, 0.28, 0.03, 'sine', -3, 16, 220), 250);
+  setTimeout(() => playTone(783.99, 0.26, 0.022, 'sine', 2, 14, 200), 380);
 }
 
 /** Slightly happier chime — for YES / success */
 export function playSuccess() {
-  playTone(523, 0.18, 0.065, 'sine', 0, 10);
-  setTimeout(() => playTone(659, 0.16, 0.06, 'sine', 3, 8), 80);
-  setTimeout(() => playTone(784, 0.2, 0.055, 'sine', -2, 8), 170);
-  setTimeout(() => playTone(1047, 0.25, 0.05, 'sine', 0, 10), 280);
+  playTone(392, 0.24, 0.042, 'sine', 0, 14, 200);
+  setTimeout(() => playTone(523.25, 0.22, 0.038, 'sine', 3, 12, 180), 90);
+  setTimeout(() => playTone(659.25, 0.26, 0.034, 'sine', -2, 12, 200), 185);
+  setTimeout(() => playTone(783.99, 0.3, 0.03, 'sine', 0, 14, 240), 300);
 }
 
 /** Gentle confirmation — for saving something */
 export function playConfirm() {
-  playTone(700, 0.12, 0.06, 'sine', 0, 6);
-  setTimeout(() => playTone(880, 0.1, 0.05, 'sine', 0, 5), 70);
+  playTone(523.25, 0.16, 0.04, 'sine', 0, 9, 130);
+  setTimeout(() => playTone(698.46, 0.14, 0.03, 'sine', 0, 8, 120), 80);
 }

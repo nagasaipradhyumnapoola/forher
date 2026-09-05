@@ -25,8 +25,8 @@ const CHORDS: ChordDefinition[] = [
   { padFrequencies: [87.31, 130.81, 174.61, 196.0, 220.0, 329.63], arpeggioNotes: [523.25, 659.25, 783.99, 880.0, 1046.5], root: 43.65 },
 ];
 
-const MOOD_FILTER: Record<Mood, number> = { calm: 1250, warm: 1500, magical: 1900, celebration: 2400 };
-const MOOD_LEVEL: Record<Mood, number> = { calm: 0.42, warm: 0.46, magical: 0.5, celebration: 0.55 };
+const MOOD_FILTER: Record<Mood, number> = { calm: 1500, warm: 1750, magical: 2100, celebration: 2500 };
+const MOOD_LEVEL: Record<Mood, number> = { calm: 0.62, warm: 0.66, magical: 0.7, celebration: 0.75 };
 
 function makeImpulse(ctx: AudioContext, seconds = 2.8, decay = 2.6): AudioBuffer {
   const rate = ctx.sampleRate;
@@ -105,6 +105,23 @@ export const SoundPlayer: React.FC = () => {
       compressor.connect(master);
       master.connect(ctx.destination);
 
+      // ── Continuous drone bed ──
+      // Three very quiet detuned sines that start once and never retrigger, so
+      // there is always sound underneath the chords. Without this, any timing
+      // hiccup between chords is heard as the music "pausing".
+      const bed = ctx.createGain();
+      bed.gain.setValueAtTime(0.0001, now);
+      bed.gain.linearRampToValueAtTime(0.055, now + 5);
+      bed.connect(filter);
+      [65.41, 98.0, 130.81].forEach((f, i) => {
+        const o = ctx.createOscillator();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(f, now);
+        o.detune.setValueAtTime((i - 1) * 5, now);
+        o.connect(bed);
+        o.start(now);
+      });
+
       return ctx;
     } catch (err) {
       console.error('Audio init error:', err);
@@ -117,9 +134,11 @@ export const SoundPlayer: React.FC = () => {
     const filter = filterRef.current;
     if (!ctx || !filter || ctx.state === 'closed') return;
     const now = ctx.currentTime;
-    const dur = 8.5;
-    const attack = 3.2;
-    const release = 3.8;
+    // Long, heavily-overlapping chords with a short attack: a new chord is already
+    // at full level well before the previous one fades, so the bed never dips.
+    const dur = 13;
+    const attack = 1.8;
+    const release = 5.5;
 
     chord.padFrequencies.forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -128,7 +147,7 @@ export const SoundPlayer: React.FC = () => {
       osc.type = i === 0 ? 'triangle' : 'sine';
       osc.frequency.setValueAtTime(freq, now);
       osc.detune.setValueAtTime((i % 2 === 0 ? 1 : -1) * (2.5 + i * 0.8), now);
-      const voiceGain = i === 0 ? 0.045 : 0.038 / Math.sqrt(i + 1);
+      const voiceGain = i === 0 ? 0.075 : 0.058 / Math.sqrt(i + 1);
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.linearRampToValueAtTime(voiceGain, now + attack);
       gain.gain.setValueAtTime(voiceGain, now + dur - release);
@@ -151,8 +170,8 @@ export const SoundPlayer: React.FC = () => {
     sub.type = 'sine';
     sub.frequency.setValueAtTime(chord.root, now);
     subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(0.05, now + attack);
-    subGain.gain.setValueAtTime(0.05, now + dur - release);
+    subGain.gain.linearRampToValueAtTime(0.075, now + attack);
+    subGain.gain.setValueAtTime(0.075, now + dur - release);
     subGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     sub.connect(subGain);
     subGain.connect(filter);
@@ -164,22 +183,19 @@ export const SoundPlayer: React.FC = () => {
     const ctx = ctxRef.current;
     const filter = filterRef.current;
     if (!ctx || !filter || ctx.state === 'closed' || mutedRef.current) return;
-    const freq = notes[Math.floor(Math.random() * notes.length)];
+    // an octave down and no octave-doubling partial — keeps it warm, not shrill
+    const freq = notes[Math.floor(Math.random() * notes.length)] / 2;
     const now = ctx.currentTime;
-    const dur = 2.4;
+    const dur = 2.8;
     const osc = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
     const gain = ctx.createGain();
     const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(freq * 2, now);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.022, now + 0.015);
+    gain.gain.linearRampToValueAtTime(0.016, now + 0.06);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     osc.connect(gain);
-    osc2.connect(gain);
     if (panner) {
       panner.pan.setValueAtTime((Math.random() - 0.5) * 1.2, now);
       gain.connect(panner);
@@ -188,9 +204,7 @@ export const SoundPlayer: React.FC = () => {
       gain.connect(filter);
     }
     osc.start(now);
-    osc2.start(now);
     osc.stop(now + dur + 0.05);
-    osc2.stop(now + dur + 0.05);
   }, []);
 
   const startEngine = useCallback(() => {
@@ -204,10 +218,10 @@ export const SoundPlayer: React.FC = () => {
     chordTimer.current = window.setInterval(() => {
       idxRef.current = (idxRef.current + 1) % CHORDS.length;
       playPadChord(CHORDS[idxRef.current]);
-    }, 6000);
+    }, 5200);
     bellTimer.current = window.setInterval(() => {
-      if (Math.random() > 0.2) playBell(CHORDS[idxRef.current].arpeggioNotes);
-    }, 2200);
+      if (Math.random() > 0.45) playBell(CHORDS[idxRef.current].arpeggioNotes);
+    }, 3800);
   }, [initAudio, playPadChord, playBell]);
 
   // React to mood → shift brightness + level smoothly.

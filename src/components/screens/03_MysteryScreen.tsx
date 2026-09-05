@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { playSelect, playTransition } from '../../utils/audio';
 import { logEvent } from '../../utils/logger';
+import { ScreenDecor } from '../fx/ScreenDecor';
 
 interface Props {
   onNext: () => void;
@@ -39,6 +40,7 @@ export const MysteryScreen: React.FC<Props> = ({ onNext }) => {
 
   return (
     <div className="screen-wrapper experience-container">
+      <ScreenDecor variant="cards" />
       <h1 className="display-title" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', marginBottom: '0.5rem' }}>
         I have something to tell you.
       </h1>

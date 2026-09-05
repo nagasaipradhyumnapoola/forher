@@ -55,6 +55,10 @@ function line(e: Ev): string {
     case 'plan_save': return `📍 Saved plan — ${g(e, 'vibe')} · ${g(e, 'place')} · ${g(e, 'date')} · ${g(e, 'time')}`;
     case 'plan_copied': return '📋 Copied the plan';
     case 'complete': return '🎉 Reached the final screen';
+    case 'exit_opened': return '🚪 Opened the "leave" door';
+    case 'exit_cancelled': return '↩️ Changed her mind and stayed';
+    case 'exit_message': return g(e, 'message') ? `✉️ Parting words: "${g(e, 'message')}"` : '✉️ Left without writing anything';
+    case 'exit_confirmed': return '👋 Closed the experience and left';
     default: return `• ${e.type}`;
   }
 }
@@ -75,6 +79,8 @@ const wrap: React.CSSProperties = {
   padding: '2.5rem 1.5rem 4rem',
   position: 'relative',
   zIndex: 10,
+  height: '100vh',
+  overflowY: 'auto', // dashboard scrolls internally; the experience body is locked
 };
 
 export const AdminApp: React.FC = () => {

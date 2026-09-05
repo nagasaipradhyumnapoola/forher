@@ -5,6 +5,7 @@ import { MapPin, Calendar, Clock, Edit3, Share2, Check, Flower2 } from 'lucide-r
 import confetti from 'canvas-confetti';
 import { playReveal, playClick } from '../../utils/audio';
 import { logEvent } from '../../utils/logger';
+import { ScreenDecor } from '../fx/ScreenDecor';
 
 interface Props {
   plan: MeetingPlan;
@@ -52,14 +53,15 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
   };
 
   return (
-    <div className="screen-wrapper experience-container" style={{ paddingBottom: '3rem' }}>
+    <div className="screen-wrapper experience-container final-screen" style={{ paddingBottom: '3rem' }}>
+      <ScreenDecor variant="ticket" />
       {/* Sequential emotional payoff */}
-      <div style={{ minHeight: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.9rem', marginBottom: '1.5rem' }}>
+      <div className="final-seq" style={{ minHeight: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.9rem', marginBottom: '1.5rem' }}>
         <h1 className="display-title" style={{ ...lineStyle(step >= 1), fontSize: 'clamp(2.4rem, 5.2vw, 3.8rem)' }}>
           okay.
         </h1>
 
-        <p className="subheading" style={{ ...lineStyle(step >= 2), fontSize: '1.1rem', color: 'var(--text-primary)' }}>
+        <p className="subheading final-hide-sm" style={{ ...lineStyle(step >= 2), fontSize: '1.1rem', color: 'var(--text-primary)' }}>
           I think I'm really looking forward to this.
         </p>
 
@@ -135,10 +137,8 @@ export const FinalScreen: React.FC<Props> = ({ plan, onEditPlan }) => {
           </button>
         </div>
 
-        <p className="cursive-small" style={{ marginTop: '1.6rem', lineHeight: 1.55, color: 'var(--text-secondary)', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
-          p.s. — I rewrote this an embarrassing number of times. nothing felt
-          good enough for you, and I ran out of excuses not to just say it.
-          so… hi. 🙈
+        <p className="cursive-small final-ps" style={{ marginTop: '1.6rem', lineHeight: 1.55, color: 'var(--text-secondary)', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
+          p.s. — I rewrote this way too many times. nothing felt good enough for you. so… hi 🙈
         </p>
       </div>
 
